@@ -50,7 +50,6 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     df.columns = [str(col).strip().replace('\n', ' ') for col in df.columns]
     return df
 
-# ROTA ALTERADA PARA O PADRÃO VERCEL (/api/processar)
 @app.route('/api/processar', methods=['POST'])
 def processar():
     try:
@@ -73,6 +72,14 @@ def processar():
         if not col_id_ads:
             return jsonify({"erro": "Não foi possível encontrar a coluna de ID na planilha de Ads."}), 400
 
+        # =====================================================================
+        # CORREÇÃO DO BUG: BLINDAGEM CONTRA LINHAS DE "TOTAL" E RODAPÉS DO ML
+        # Filtramos o DataFrame para manter APENAS linhas onde a coluna de ID contém números.
+        # Isso destrói imediatamente as linhas de "Total", "Glossário" e células vazias.
+        # =====================================================================
+        df_desempenho = df_desempenho[df_desempenho['ID do anúncio'].astype(str).str.contains(r'\d', regex=True, na=False)]
+        df_ads = df_ads[df_ads[col_id_ads].astype(str).str.contains(r'\d', regex=True, na=False)]
+
         if col_vendas_brutas in df_desempenho.columns:
             df_desempenho[col_vendas_brutas] = df_desempenho[col_vendas_brutas].apply(limpar_moeda)
         
@@ -86,8 +93,9 @@ def processar():
         if col_invest_ads and col_invest_ads in df_ads.columns:
             df_ads[col_invest_ads] = df_ads[col_invest_ads].apply(limpar_moeda)
 
-        df_ads['ID_Tratado'] = df_ads[col_id_ads].astype(str).str.replace('MLB', '', regex=False)
-        df_desempenho['ID_Tratado'] = df_desempenho['ID do anúncio'].astype(str)
+        # Removemos o "MLB" e espaços em branco para garantir o "Match" perfeito no Merge
+        df_ads['ID_Tratado'] = df_ads[col_id_ads].astype(str).str.upper().str.replace('MLB', '', regex=False).str.strip()
+        df_desempenho['ID_Tratado'] = df_desempenho['ID do anúncio'].astype(str).str.upper().str.replace('MLB', '', regex=False).str.strip()
 
         agg_dict = {col_receita_ads: 'sum'}
         if col_invest_ads:
@@ -110,6 +118,8 @@ def processar():
         }).reset_index()
 
         df_desempenho_agrupado = df_desempenho_agrupado.sort_values(by=col_vendas_brutas, ascending=False).copy()
+        
+        # Agora o somatório será 100% fiel à realidade!
         faturamento_total = float(df_desempenho_agrupado[col_vendas_brutas].sum())
         unidades_total = int(df_desempenho_agrupado[col_unidades].sum())
         
@@ -152,4 +162,4 @@ def processar():
     except Exception as e:
         return jsonify({"erro": f"Erro na leitura. Detalhe: {str(e)}"}), 500
 
-# O Vercel cuida do app.run() automaticamente, não precisa colocar aqui.
+# Sem app.run() no final porque o Vercel lida com a execução do backend.
