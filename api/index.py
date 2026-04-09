@@ -4,9 +4,13 @@ import numpy as np
 
 app = Flask(__name__)
 
+# ====================================================================
+# A "GUILHOTINA FINANCEIRA": Arredonda célula a célula na leitura.
+# Impede que micro-cêntimos invisíveis passem para a fase de soma.
+# ====================================================================
 def limpar_moeda(valor):
     if pd.isna(valor) or valor == '-': return 0.0
-    if isinstance(valor, (int, float)): return float(valor)
+    if isinstance(valor, (int, float)): return round(float(valor), 2)
     
     v = str(valor).replace('R$', '').replace('BRL', '').strip()
     v = v.replace(' ', '')
@@ -24,7 +28,8 @@ def limpar_moeda(valor):
         v = v.replace('.', '')
 
     try: 
-        return float(v)
+        # CORTA AQUI: Transforma 1.937 em 1.94 logo na leitura!
+        return round(float(v), 2)
     except: 
         return 0.0
 
@@ -86,6 +91,7 @@ def processar():
         
         df_desempenho = df_desempenho[df_desempenho[col_id_des].astype(str).str.contains(r'\d', regex=True, na=False)]
 
+        # Como o limpar_moeda já corta as dízimas, tudo o que for somado daqui para baixo será exato.
         if col_vendas_brutas in df_desempenho.columns:
             df_desempenho[col_vendas_brutas] = df_desempenho[col_vendas_brutas].apply(limpar_moeda)
         
@@ -106,7 +112,6 @@ def processar():
         df_desempenho_agrupado.rename(columns={'Anúncio_Clean': 'Anúncio'}, inplace=True)
         df_desempenho_agrupado = df_desempenho_agrupado.sort_values(by=col_vendas_brutas, ascending=False).copy()
         
-        # ARREDONDAMENTO NA FONTE: Crava o faturamento global em 2 casas decimais
         faturamento_total = round(float(df_desempenho_agrupado[col_vendas_brutas].sum()), 2)
         unidades_total = int(df_desempenho_agrupado[col_unidades].sum())
         
@@ -179,7 +184,6 @@ def processar():
 
             df_final = df_final.replace([np.inf, -np.inf], 0).fillna(0)
 
-            # ARREDONDAMENTO NA TABELA: Força tudo a ter no máximo 2 casas decimais na estrutura final de dados
             df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
             df_final['Receita_Ads'] = df_final['Receita_Ads'].round(2)
             df_final['Investimento_Ads'] = df_final['Investimento_Ads'].round(2)
@@ -188,7 +192,6 @@ def processar():
             oportunidades = df_final[df_final['Alerta_Oportunidade']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas]].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
             gargalos = df_final[df_final['Alerta_Gargalo']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).sort_values(by='Investimento_Ads', ascending=False).to_dict('records')
             
-            # ARREDONDAMENTO NA FONTE: Métricas de Ads
             receita_ads_total = round(float(df_final['Receita_Ads'].sum()), 2)
             investimento_ads_total = round(float(df_final['Investimento_Ads'].sum()), 2)
             
