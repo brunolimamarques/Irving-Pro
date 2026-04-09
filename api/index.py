@@ -32,7 +32,6 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     nome = arquivo.filename.lower()
     
     if nome.endswith('.csv'):
-        # BLINDAGEM DE ENCODING: Tenta ler nos formatos mais comuns do ML
         try:
             df = pd.read_csv(arquivo, header=None, encoding='utf-8')
         except UnicodeDecodeError:
@@ -49,7 +48,6 @@ def carregar_planilha_segura(arquivo, is_ads=False):
             arquivo.seek(0)
             df = pd.read_excel(arquivo, header=None)
             
-    # Trava de segurança para arquivos vazios
     if df is None or len(df) == 0:
         raise ValueError("O arquivo enviado parece estar vazio.")
             
@@ -79,7 +77,6 @@ def processar():
         if not arq_desempenho:
             return jsonify({"erro": "A planilha de Desempenho é obrigatória para qualquer análise."}), 400
 
-        # ======= 1. PROCESSAMENTO DO DESEMPENHO =======
         df_desempenho = carregar_planilha_segura(arq_desempenho, False)
         
         col_id_des = next((c for c in df_desempenho.columns if 'id do anúncio' in c.lower()), 'ID do anúncio')
@@ -109,7 +106,8 @@ def processar():
         df_desempenho_agrupado.rename(columns={'Anúncio_Clean': 'Anúncio'}, inplace=True)
         df_desempenho_agrupado = df_desempenho_agrupado.sort_values(by=col_vendas_brutas, ascending=False).copy()
         
-        faturamento_total = float(df_desempenho_agrupado[col_vendas_brutas].sum())
+        # ARREDONDAMENTO NA FONTE: Crava o faturamento global em 2 casas decimais
+        faturamento_total = round(float(df_desempenho_agrupado[col_vendas_brutas].sum()), 2)
         unidades_total = int(df_desempenho_agrupado[col_unidades].sum())
         
         if faturamento_total > 0:
@@ -120,14 +118,12 @@ def processar():
         condicoes = [(df_desempenho_agrupado['Percentual_Acumulado'] <= 80), (df_desempenho_agrupado['Percentual_Acumulado'] > 80) & (df_desempenho_agrupado['Percentual_Acumulado'] <= 95)]
         df_desempenho_agrupado['Curva_ABC'] = np.select(condicoes, ['A', 'B'], default='C')
 
-        # ======= 2. VARIÁVEIS GLOBAIS =======
         has_ads = False
         oportunidades = []
         gargalos = []
         receita_ads_total = 0.0
         investimento_ads_total = 0.0
 
-        # ======= 3. PROCESSAMENTO DO ADS (SE EXISTIR) =======
         if arq_ads:
             has_ads = True
             df_ads = carregar_planilha_segura(arq_ads, True)
@@ -162,10 +158,8 @@ def processar():
             else:
                 df_ads_agrupado['Investimento_Ads'] = 0.0
 
-            # BLINDAGEM DO JOIN: OUTER JOIN para não perder campanhas de produtos com 0 vendas orgânicas
             df_final = pd.merge(df_desempenho_agrupado, df_ads_agrupado, on='ID_Tratado', how='outer')
             
-            # Preenchendo os "órfãos" (produtos que gastaram Ads mas não estavam no Desempenho)
             df_final['Anúncio'] = df_final['Anúncio'].fillna(df_final['Anuncio_Ads_Temp']).fillna('Produto apenas em Ads')
             df_final['Curva_ABC'] = df_final['Curva_ABC'].fillna('C')
             df_final[col_vendas_brutas] = df_final[col_vendas_brutas].fillna(0.0)
@@ -173,7 +167,6 @@ def processar():
             df_final['Receita_Ads'] = df_final['Receita_Ads'].fillna(0.0)
             df_final['Investimento_Ads'] = df_final.get('Investimento_Ads', 0.0).fillna(0.0)
             
-            # BLINDAGEM DA DIVISÃO: Se fat_total > 0 ok, senão verifica se tem receita_ads > 0 para fixar em 100%
             df_final['Dependencia_Ads'] = np.where(
                 df_final[col_vendas_brutas] > 0, 
                 (df_final['Receita_Ads'] / df_final[col_vendas_brutas]) * 100, 
@@ -186,22 +179,29 @@ def processar():
 
             df_final = df_final.replace([np.inf, -np.inf], 0).fillna(0)
 
+            # ARREDONDAMENTO NA TABELA: Força tudo a ter no máximo 2 casas decimais na estrutura final de dados
+            df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
+            df_final['Receita_Ads'] = df_final['Receita_Ads'].round(2)
+            df_final['Investimento_Ads'] = df_final['Investimento_Ads'].round(2)
+            df_final['Dependencia_Ads'] = df_final['Dependencia_Ads'].round(2)
+
             oportunidades = df_final[df_final['Alerta_Oportunidade']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas]].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
-            
-            # O gargalo agora ordena pelo MAIOR investimento em ads de produtos na curva C
             gargalos = df_final[df_final['Alerta_Gargalo']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).sort_values(by='Investimento_Ads', ascending=False).to_dict('records')
             
-            receita_ads_total = float(df_final['Receita_Ads'].sum())
-            investimento_ads_total = float(df_final['Investimento_Ads'].sum())
+            # ARREDONDAMENTO NA FONTE: Métricas de Ads
+            receita_ads_total = round(float(df_final['Receita_Ads'].sum()), 2)
+            investimento_ads_total = round(float(df_final['Investimento_Ads'].sum()), 2)
             
             visao_geral = df_final.sort_values(by=col_vendas_brutas, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
         
-        # ======= 4. MODO ORGÂNICO (SEM ADS) =======
         else:
             df_final = df_desempenho_agrupado.copy()
             df_final['Receita_Ads'] = 0.0
             df_final['Investimento_Ads'] = 0.0
             df_final['Dependencia_Ads'] = 0.0
+            
+            df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
+            
             visao_geral = df_final.sort_values(by=col_vendas_brutas, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
 
         return jsonify({
@@ -219,5 +219,5 @@ def processar():
         })
     except Exception as e:
         import traceback
-        print(traceback.format_exc()) # Para você ver o erro no painel do Vercel
+        print(traceback.format_exc())
         return jsonify({"erro": f"Erro na formatação dos dados. Detalhe: {str(e)}"}), 500
