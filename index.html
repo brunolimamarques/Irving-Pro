@@ -59,11 +59,8 @@
             cursor: pointer; transition: all 0.2s ease; font-weight: 700; font-size: 13px;
         }
         input[type="file"]::file-selector-button:hover { 
-            background: #444444; 
-            border-color: #555555;
-            color: #FFFFFF;
+            background: #444444; border-color: #555555; color: #FFFFFF;
         }
-        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -100,19 +97,19 @@
                 <i class="fa-solid fa-cloud-arrow-up text-5xl text-[#3483FA]"></i>
             </div>
             <h2 class="text-3xl font-extrabold text-white mb-3">Conecte seus Dados</h2>
-            <p class="text-[#A3A3A3] mb-10 font-medium">Faça o upload dos relatórios do Mercado Livre para gerar o seu painel noturno.</p>
+            <p class="text-[#A3A3A3] mb-10 font-medium">Faça o upload dos relatórios para gerar o painel noturno.</p>
             
             <form id="uploadForm" class="text-left space-y-6">
                 <div class="bg-[#121212] p-5 rounded-2xl border border-[#333333] hover:border-[#3483FA]/50 transition-all shadow-inner group">
-                    <label id="lbl-desempenho" class="block text-sm font-bold text-white mb-3 group-hover:text-[#3483FA] transition-colors"><i class="fa-solid fa-file-csv text-[#A3A3A3] mr-2 group-hover:text-[#3483FA]"></i> 1. Relatório de Desempenho</label>
+                    <label id="lbl-desempenho" class="block text-sm font-bold text-white mb-3 group-hover:text-[#3483FA] transition-colors"><i class="fa-solid fa-file-csv text-[#A3A3A3] mr-2 group-hover:text-[#3483FA]"></i> 1. Relatório de Desempenho (Obrigatório)</label>
                     <input type="file" id="desempenho" accept=".csv, .xlsx" class="block w-full text-sm text-[#A3A3A3]">
                 </div>
                 <div class="bg-[#121212] p-5 rounded-2xl border border-[#333333] hover:border-[#3483FA]/50 transition-all shadow-inner group">
-                    <label id="lbl-ads" class="block text-sm font-bold text-white mb-3 group-hover:text-[#3483FA] transition-colors"><i class="fa-solid fa-bullseye text-[#A3A3A3] mr-2 group-hover:text-[#3483FA]"></i> 2. Relatório de Publicidade</label>
+                    <label id="lbl-ads" class="block text-sm font-bold text-white mb-3 group-hover:text-[#3483FA] transition-colors"><i class="fa-solid fa-bullseye text-[#A3A3A3] mr-2 group-hover:text-[#3483FA]"></i> 2. Relatório de Publicidade <span class="text-[#A3A3A3] font-normal">(Opcional)</span></label>
                     <input type="file" id="ads" accept=".csv, .xlsx" class="block w-full text-sm text-[#A3A3A3]">
                 </div>
                 
-                <button type="submit" id="btn-submit" class="w-full mt-4 bg-[#3483FA] hover:bg-[#2968C8] text-white py-4 rounded-2xl font-extrabold text-lg transition-all duration-300 shadow-[0_8px_20px_rgba(52,131,250,0.3)] hover:shadow-[0_12px_25px_rgba(52,131,250,0.4)] transform active:scale-[0.98] flex items-center justify-center gap-3 border border-[#4890fc]/50">
+                <button type="submit" id="btn-submit" class="w-full mt-4 bg-[#3483FA] hover:bg-[#2968C8] text-white py-4 rounded-2xl font-extrabold text-lg transition-all duration-300 shadow-[0_8px_20px_rgba(52,131,250,0.3)] transform active:scale-[0.98] flex items-center justify-center gap-3 border border-[#4890fc]/50">
                     <i class="fa-solid fa-bolt"></i> Processar Inteligência
                 </button>
             </form>
@@ -120,64 +117,63 @@
 
         <div id="dashboard-section" class="hidden">
             
-            <div class="mb-8 animate-fade-up">
-                <h2 class="text-3xl font-extrabold text-white">Visão Executiva</h2>
-                <p id="insight-main" class="text-[#A3A3A3] text-lg mt-1 font-medium">Analisando o seu catálogo...</p>
+            <div class="mb-8 animate-fade-up flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-white">Visão Executiva</h2>
+                    <p id="insight-main" class="text-[#A3A3A3] text-lg mt-1 font-medium">Analisando o seu catálogo...</p>
+                </div>
+                <div id="badge-modo" class="hidden bg-[#3483FA]/20 text-[#3483FA] border border-[#3483FA]/30 px-3 py-1 rounded-full text-xs font-bold items-center gap-1">
+                    <i class="fa-solid fa-leaf"></i> MODO ORGÂNICO
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                <div class="ml-card p-6 animate-fade-up delay-100 relative overflow-hidden group">
+            <div id="kpis-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div id="kpi-card-fat" class="ml-card p-6 animate-fade-up delay-100 relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-sack-dollar text-5xl text-emerald-400"></i></div>
                     <p class="text-xs font-bold text-[#A3A3A3] uppercase tracking-widest mb-2 relative z-10">Faturamento Líquido</p>
                     <h3 id="kpi-fat" class="text-3xl font-black text-white relative z-10">R$ 0,00</h3>
                     <p id="kpi-unid" class="text-sm font-bold text-emerald-400 mt-2 bg-emerald-500/10 inline-block px-2 py-0.5 rounded border border-emerald-500/20 relative z-10">0 un. vendidas</p>
                 </div>
-                <div class="ml-card p-6 animate-fade-up delay-100 relative overflow-hidden group">
+                <div id="kpi-card-ads-1" class="ml-card p-6 animate-fade-up delay-100 relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-bullhorn text-5xl text-[#3483FA]"></i></div>
                     <p class="text-xs font-bold text-[#A3A3A3] uppercase tracking-widest mb-2 relative z-10">Receita de Ads</p>
                     <h3 id="kpi-ads" class="text-3xl font-black text-white relative z-10">R$ 0,00</h3>
-                    <p class="text-sm font-semibold text-[#888888] mt-2 relative z-10">Atribuição direta</p>
                 </div>
-                <div class="ml-card p-6 animate-fade-up delay-200 border-l-4 border-l-rose-500 relative overflow-hidden group">
+                <div id="kpi-card-ads-2" class="ml-card p-6 animate-fade-up delay-200 border-l-4 border-l-rose-500 relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-fire text-5xl text-rose-500"></i></div>
                     <p class="text-xs font-bold text-[#A3A3A3] uppercase tracking-widest mb-2 relative z-10">Custo Ads (Gasto)</p>
                     <h3 id="kpi-custo" class="text-3xl font-black text-rose-500 relative z-10">R$ 0,00</h3>
-                    <p class="text-sm font-semibold text-[#888888] mt-2 relative z-10">Investimento total</p>
                 </div>
-                <div class="ml-card p-6 animate-fade-up delay-200 border-l-4 border-l-[#FFF159] relative overflow-hidden group">
+                <div id="kpi-card-ads-3" class="ml-card p-6 animate-fade-up delay-200 border-l-4 border-l-[#FFF159] relative overflow-hidden group">
                     <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-rocket text-5xl text-[#FFF159]"></i></div>
                     <p class="text-xs font-bold text-[#A3A3A3] uppercase tracking-widest mb-2 relative z-10">Oportunidades (Curva A)</p>
                     <h3 id="kpi-op" class="text-3xl font-black text-[#FFF159] relative z-10">0</h3>
-                    <p class="text-sm font-semibold text-[#888888] mt-2 relative z-10">Prontos para escalar</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
-                <div class="lg:col-span-2 ml-card p-6 animate-fade-up delay-300">
+            <div id="charts-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+                <div id="chart-bar-wrapper" class="lg:col-span-2 ml-card p-6 animate-fade-up delay-300">
                     <h3 class="text-lg font-bold text-white mb-1">Receita Orgânica vs Ads (Top 5)</h3>
-                    <p class="text-sm text-[#A3A3A3] mb-6">A composição do faturamento dos seus produtos campeões.</p>
-                    <div class="relative h-72 w-full">
-                        <canvas id="barChart"></canvas>
-                    </div>
+                    <p class="text-sm text-[#A3A3A3] mb-6">Composição do faturamento dos campeões.</p>
+                    <div class="relative h-72 w-full"><canvas id="barChart"></canvas></div>
                 </div>
-                <div class="ml-card p-6 animate-fade-up delay-300 flex flex-col">
-                    <h3 class="text-lg font-bold text-white mb-1">Concentração ABC</h3>
-                    <p class="text-sm text-[#A3A3A3] mb-6">Distribuição da receita.</p>
-                    <div class="relative flex-1 w-full flex justify-center items-center min-h-[200px]">
-                        <canvas id="pieChart"></canvas>
-                    </div>
+                <div id="chart-pie-wrapper" class="ml-card p-6 animate-fade-up delay-300 flex flex-col">
+                    <h3 class="text-lg font-bold text-white mb-1 text-center">Concentração ABC</h3>
+                    <p class="text-sm text-[#A3A3A3] mb-6 text-center">Distribuição da receita da sua operação.</p>
+                    <div class="relative flex-1 w-full flex justify-center items-center min-h-[250px]"><canvas id="pieChart"></canvas></div>
                 </div>
             </div>
 
-            <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2 mt-12"><i class="fa-solid fa-brain text-[#FFF159]"></i> Irving Insights</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                <div id="insight-box-1" class="ml-card p-6 border-l-4 border-l-emerald-500 bg-emerald-900/10"></div>
-                <div id="insight-box-2" class="ml-card p-6 border-l-4 border-l-rose-500 bg-rose-900/10"></div>
+            <div id="insights-section">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2 mt-12"><i class="fa-solid fa-brain text-[#FFF159]"></i> Irving Insights</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                    <div id="insight-box-1" class="ml-card p-6 border-l-4 border-l-emerald-500 bg-emerald-900/10"></div>
+                    <div id="insight-box-2" class="ml-card p-6 border-l-4 border-l-rose-500 bg-rose-900/10"></div>
+                </div>
             </div>
 
             <div class="ml-card overflow-hidden animate-fade-up delay-300 mb-12">
-                
-                <div class="px-6 py-5 border-b border-[#333333] bg-[#1A1A1A]">
+                <div id="tabs-container" class="px-6 py-5 border-b border-[#333333] bg-[#1A1A1A]">
                     <div class="bg-[#121212] p-1.5 rounded-2xl flex gap-2 w-full md:w-fit overflow-x-auto no-scrollbar shadow-inner border border-[#333333]">
                         <button onclick="switchTab('op')" id="btn-op" class="px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap bg-[#3483FA] text-white shadow-sm transform active:scale-95">
                             <i class="fa-solid fa-arrow-trend-up"></i> Escala
@@ -195,10 +191,7 @@
                     <table class="w-full text-left border-collapse relative min-w-[800px]">
                         <thead class="bg-[#1A1A1A] sticky top-0 z-10">
                             <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
-                                <th class="py-4 pl-6 font-bold">MLB</th>
-                                <th class="py-4 font-bold">Produto</th>
-                                <th class="py-4 font-bold text-center">Unidades</th>
-                                <th class="py-4 font-bold text-right pr-6">Fat. Orgânico</th>
+                                <th class="py-4 pl-6 font-bold">MLB</th><th class="py-4 font-bold">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right pr-6">Fat. Orgânico</th>
                             </tr>
                         </thead>
                         <tbody id="body-op" class="divide-y divide-[#333333] text-sm"></tbody>
@@ -209,13 +202,7 @@
                     <table class="w-full text-left border-collapse relative min-w-[1000px]">
                         <thead class="bg-[#1A1A1A] sticky top-0 z-10">
                             <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
-                                <th class="py-4 pl-6 font-bold">MLB</th>
-                                <th class="py-4 font-bold w-64">Produto</th>
-                                <th class="py-4 font-bold text-center">Unidades</th>
-                                <th class="py-4 font-bold text-right">Faturamento</th>
-                                <th class="py-4 font-bold text-right text-rose-500">Custo Ads</th>
-                                <th class="py-4 font-bold text-right text-[#3483FA]">Receita Ads</th>
-                                <th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
+                                <th class="py-4 pl-6 font-bold">MLB</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right">Faturamento</th><th class="py-4 font-bold text-right text-rose-500">Custo Ads</th><th class="py-4 font-bold text-right text-[#3483FA]">Receita Ads</th><th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
                             </tr>
                         </thead>
                         <tbody id="body-gar" class="divide-y divide-[#333333] text-sm"></tbody>
@@ -226,35 +213,20 @@
                     <div class="flex flex-col md:flex-row gap-4 mb-6">
                         <div class="flex-1 relative">
                             <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-[#A3A3A3]"></i>
-                            <input type="text" id="searchAbc" placeholder="Pesquisar anúncio ou ID..." 
-                                class="ml-input w-full pl-10 pr-4 py-3 text-sm font-medium"
-                                onkeyup="renderizarTabelaAbc()">
+                            <input type="text" id="searchAbc" placeholder="Pesquisar anúncio..." class="ml-input w-full pl-10 pr-4 py-3 text-sm font-medium" onkeyup="renderizarTabelaAbc()">
                         </div>
                         <div class="w-full md:w-64 relative">
                             <select id="filterCurve" class="ml-input w-full pl-4 pr-10 py-3 text-sm font-medium appearance-none cursor-pointer" onchange="renderizarTabelaAbc()">
-                                <option value="Todas">Todas as Curvas</option>
-                                <option value="A">Curva A (80%)</option>
-                                <option value="B">Curva B (15%)</option>
-                                <option value="C">Curva C (5%)</option>
+                                <option value="Todas">Todas as Curvas</option><option value="A">Curva A (80%)</option><option value="B">Curva B (15%)</option><option value="C">Curva C (5%)</option>
                             </select>
                             <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-[#A3A3A3] pointer-events-none text-xs"></i>
                         </div>
                     </div>
 
                     <div class="overflow-y-auto overflow-x-auto no-scrollbar border border-[#333333] rounded-xl max-h-[500px] relative">
-                        <table class="w-full text-left border-collapse min-w-[1100px]">
-                            <thead class="bg-[#1A1A1A] sticky top-0 z-10">
-                                <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
-                                    <th class="py-4 font-bold pl-6 text-center w-20">Curva</th>
-                                    <th class="py-4 font-bold">MLB</th>
-                                    <th class="py-4 font-bold w-64">Produto</th>
-                                    <th class="py-4 font-bold text-center">Unidades</th>
-                                    <th class="py-4 font-bold text-right">Fat. Total</th>
-                                    <th class="py-4 font-bold text-right text-rose-500">Custo Ads</th>
-                                    <th class="py-4 font-bold text-right text-[#3483FA]">Receita Ads</th>
-                                    <th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
-                                </tr>
-                            </thead>
+                        <table class="w-full text-left border-collapse min-w-[800px]">
+                            <thead id="thead-abc" class="bg-[#1A1A1A] sticky top-0 z-10">
+                                </thead>
                             <tbody id="body-abc" class="divide-y divide-[#333333] text-sm"></tbody>
                         </table>
                     </div>
@@ -271,6 +243,7 @@
         Chart.defaults.borderColor = '#333333';
 
         let dadosVisaoGeral = []; 
+        let globalHasAds = true;
         let myBarChart = null;
         let myPieChart = null;
 
@@ -279,7 +252,7 @@
                 const label = document.getElementById(`lbl-${id}`);
                 if(this.files.length > 0) {
                     label.classList.add('text-[#3483FA]');
-                    label.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> Ficheiro Anexado`;
+                    label.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> Anexado com Sucesso`;
                     this.parentElement.classList.add('border-[#3483FA]/50', 'bg-[#3483FA]/5');
                 }
             });
@@ -298,8 +271,10 @@
             const inactiveClasses = "text-[#A3A3A3] hover:bg-[#1F1F1F] hover:text-white";
 
             ['op', 'gar', 'abc'].forEach(t => {
-                document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
-                document.getElementById(`btn-${t}`).className = t === tab ? `${baseClasses} ${activeClasses}` : `${baseClasses} ${inactiveClasses}`;
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`btn-${t}`);
+                if(el) el.style.display = t === tab ? 'block' : 'none';
+                if(btn) btn.className = t === tab ? `${baseClasses} ${activeClasses}` : `${baseClasses} ${inactiveClasses}`;
             });
         }
 
@@ -334,49 +309,72 @@
                 return combinaBusca && combinaCurva;
             });
 
+            const theadAbc = document.getElementById('thead-abc');
+            if(globalHasAds) {
+                theadAbc.innerHTML = `
+                    <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
+                        <th class="py-4 font-bold pl-6 text-center w-20">Curva</th><th class="py-4 font-bold">MLB</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right">Fat. Total</th><th class="py-4 font-bold text-right text-rose-500">Custo Ads</th><th class="py-4 font-bold text-right text-[#3483FA]">Receita Ads</th><th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
+                    </tr>
+                `;
+            } else {
+                theadAbc.innerHTML = `
+                    <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
+                        <th class="py-4 font-bold pl-6 text-center w-20">Curva</th><th class="py-4 font-bold">MLB</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right pr-6">Fat. Orgânico</th>
+                    </tr>
+                `;
+            }
+
             if (dadosFiltrados.length === 0) {
                 document.getElementById('body-abc').innerHTML = `<tr><td colspan="8" class="py-12 text-center text-[#A3A3A3] font-medium">Nenhum anúncio encontrado.</td></tr>`;
                 return;
             }
 
-            document.getElementById('body-abc').innerHTML = dadosFiltrados.map(item => `
-                <tr class="hover:bg-[#262626] transition-colors">
+            document.getElementById('body-abc').innerHTML = dadosFiltrados.map(item => {
+                let htmlBase = `
                     <td class="py-4 pl-6">${getCurvaBadge(item.Curva_ABC)}</td>
                     <td class="py-4 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td>
                     <td class="py-4 text-[#E5E5E5] font-medium"><div class="truncate w-48 md:w-64" title="${item.Anúncio}">${item.Anúncio}</div></td>
                     <td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50">${formatNumber(item.Unidades)}</td>
-                    <td class="py-4 text-right text-white font-bold">${formatMoney(item.Faturamento)}</td>
-                    <td class="py-4 text-right text-rose-500 font-semibold">${formatMoney(item.Investimento_Ads)}</td>
-                    <td class="py-4 text-right text-[#3483FA] font-semibold">${formatMoney(item.Receita_Ads)}</td>
-                    <td class="py-4">${getDependenciaBadgeTable(item.Dependencia_Ads)}</td>
-                </tr>
-            `).join('');
+                `;
+
+                if(globalHasAds) {
+                    return `<tr class="hover:bg-[#262626] transition-colors">${htmlBase}
+                        <td class="py-4 text-right text-white font-bold">${formatMoney(item.Faturamento)}</td>
+                        <td class="py-4 text-right text-rose-500 font-semibold">${formatMoney(item.Investimento_Ads)}</td>
+                        <td class="py-4 text-right text-[#3483FA] font-semibold">${formatMoney(item.Receita_Ads)}</td>
+                        <td class="py-4">${getDependenciaBadgeTable(item.Dependencia_Ads)}</td>
+                    </tr>`;
+                } else {
+                    return `<tr class="hover:bg-[#262626] transition-colors">${htmlBase}
+                        <td class="py-4 text-right text-emerald-400 font-bold pr-6">${formatMoney(item.Faturamento)}</td>
+                    </tr>`;
+                }
+            }).join('');
         }
 
         function renderizarGraficos(dados) {
             if(myBarChart) myBarChart.destroy();
             if(myPieChart) myPieChart.destroy();
 
-            const top5 = dados.visao_geral.slice(0, 5);
-            const ctxBar = document.getElementById('barChart').getContext('2d');
-            myBarChart = new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: top5.map(d => d.Anúncio.substring(0, 15) + '...'),
-                    datasets: [
-                        { label: 'Orgânico', data: top5.map(d => d.Faturamento - d.Receita_Ads), backgroundColor: '#10b981', borderRadius: 6 },
-                        { label: 'Ads', data: top5.map(d => d.Receita_Ads), backgroundColor: '#3483FA', borderRadius: 6 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { 
-                        x: { stacked: true, grid: { display: false } }, 
-                        y: { stacked: true, border: { display: false }, grid: { color: '#333333' } } 
+            if (globalHasAds) {
+                const top5 = dados.visao_geral.slice(0, 5);
+                const ctxBar = document.getElementById('barChart').getContext('2d');
+                myBarChart = new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: top5.map(d => d.Anúncio.substring(0, 15) + '...'),
+                        datasets: [
+                            { label: 'Orgânico', data: top5.map(d => d.Faturamento - d.Receita_Ads), backgroundColor: '#10b981', borderRadius: 6 },
+                            { label: 'Ads', data: top5.map(d => d.Receita_Ads), backgroundColor: '#3483FA', borderRadius: 6 }
+                        ]
                     },
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10, color: '#E5E5E5' } } }
-                }
-            });
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, border: { display: false }, grid: { color: '#333333' } } },
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10, color: '#E5E5E5' } } }
+                    }
+                });
+            }
 
             const countA = dados.visao_geral.filter(d => d.Curva_ABC === 'A').length;
             const countB = dados.visao_geral.filter(d => d.Curva_ABC === 'B').length;
@@ -405,30 +403,14 @@
 
             if (dados.oportunidades.length > 0) {
                 const best = dados.oportunidades[0];
-                box1.innerHTML = `
-                    <div class="flex items-start gap-4">
-                        <div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30"><i class="fa-solid fa-rocket text-xl"></i></div>
-                        <div>
-                            <h4 class="font-extrabold text-white">Escala Imediata</h4>
-                            <p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">O produto <strong>"${best.Anúncio.substring(0,25)}..."</strong> gerou <span class="text-emerald-400 font-bold">${formatMoney(best.Faturamento)}</span> sem Ads. Ativar campanha neste anúncio pode triplicar o valor.</p>
-                        </div>
-                    </div>
-                `;
+                box1.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30"><i class="fa-solid fa-rocket text-xl"></i></div><div><h4 class="font-extrabold text-white">Escala Imediata</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">O produto <strong>"${best.Anúncio.substring(0,25)}..."</strong> gerou <span class="text-emerald-400 font-bold">${formatMoney(best.Faturamento)}</span> sem Ads.</p></div></div>`;
             } else {
                 box1.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i> <p class="text-sm font-medium">Todos os seus campeões já estão em campanhas ativas!</p></div>`;
             }
 
             if (dados.gargalos.length > 0) {
                 const worst = dados.gargalos[0];
-                box2.innerHTML = `
-                    <div class="flex items-start gap-4">
-                        <div class="p-3 bg-rose-500/20 text-rose-400 rounded-xl border border-rose-500/30"><i class="fa-solid fa-fire text-xl"></i></div>
-                        <div>
-                            <h4 class="font-extrabold text-white">Alerta de Desperdício</h4>
-                            <p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">Investimento de <span class="text-rose-400 font-bold">${formatMoney(worst.Investimento_Ads)}</span> no produto <strong>"${worst.Anúncio.substring(0,25)}..."</strong> (Curva C). Considere pausar a campanha urgente.</p>
-                        </div>
-                    </div>
-                `;
+                box2.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-rose-500/20 text-rose-400 rounded-xl border border-rose-500/30"><i class="fa-solid fa-fire text-xl"></i></div><div><h4 class="font-extrabold text-white">Alerta de Desperdício</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">Investimento de <span class="text-rose-400 font-bold">${formatMoney(worst.Investimento_Ads)}</span> no produto <strong>"${worst.Anúncio.substring(0,25)}..."</strong> (Curva C).</p></div></div>`;
             } else {
                 box2.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-shield-check text-[#3483FA] text-xl"></i> <p class="text-sm font-medium">Nenhum produto sugando verba detectado. Operação limpa.</p></div>`;
             }
@@ -441,7 +423,7 @@
             const fileDes = document.getElementById('desempenho').files[0];
             const fileAds = document.getElementById('ads').files[0];
 
-            if (!fileDes || !fileAds) return showError("Selecione os dois relatórios para prosseguir.");
+            if (!fileDes) return showError("O Relatório de Desempenho é obrigatório.");
 
             btnSubmit.disabled = true;
             btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Processando Algoritmo...`;
@@ -449,61 +431,71 @@
 
             const formData = new FormData();
             formData.append('desempenho', fileDes);
-            formData.append('ads', fileAds);
+            if(fileAds) formData.append('ads', fileAds);
 
             try {
-                // AQUI ESTÁ A ROTA ATUALIZADA DO VERCEL
                 const res = await fetch('/api/processar', { method: 'POST', body: formData });
                 const data = await res.json();
 
                 if (data.erro) throw new Error(data.erro);
+
+                globalHasAds = data.has_ads;
 
                 document.getElementById('upload-section').style.display = 'none';
                 document.getElementById('dashboard-section').style.display = 'block';
 
                 document.getElementById('kpi-fat').textContent = formatMoney(data.kpis.faturamento_total);
                 document.getElementById('kpi-unid').textContent = `${formatNumber(data.kpis.unidades_total)} un. vendidas`;
-                document.getElementById('kpi-ads').textContent = formatMoney(data.kpis.receita_ads);
-                document.getElementById('kpi-custo').textContent = formatMoney(data.kpis.investimento_ads);
-                document.getElementById('kpi-op').textContent = data.kpis.qtd_oportunidades;
+                
+                // MODO ORGÂNICO UI ADAPTATION
+                if (!globalHasAds) {
+                    document.getElementById('badge-modo').classList.replace('hidden', 'flex');
+                    document.getElementById('insight-main').textContent = "Curva ABC gerada a partir do relatório de desempenho.";
+                    
+                    document.getElementById('kpis-container').className = "grid grid-cols-1 mb-10";
+                    document.getElementById('kpi-card-fat').classList.add('border-l-4', 'border-emerald-500');
+                    document.getElementById('kpi-card-ads-1').style.display = 'none';
+                    document.getElementById('kpi-card-ads-2').style.display = 'none';
+                    document.getElementById('kpi-card-ads-3').style.display = 'none';
 
-                if (data.oportunidades.length === 0) {
-                    document.getElementById('body-op').innerHTML = `<tr><td colspan="4" class="py-12 text-center text-[#A3A3A3] font-medium">Sem oportunidades pendentes.</td></tr>`;
+                    document.getElementById('charts-container').className = "grid grid-cols-1 lg:grid-cols-1 gap-6 mb-10";
+                    document.getElementById('chart-bar-wrapper').style.display = 'none';
+                    
+                    document.getElementById('insights-section').style.display = 'none';
+                    document.getElementById('tabs-container').style.display = 'none';
+                    
+                    switchTab('abc');
                 } else {
-                    document.getElementById('body-op').innerHTML = data.oportunidades.map(item => `
-                        <tr class="hover:bg-[#262626] transition-colors">
-                            <td class="py-4 pl-6 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td>
-                            <td class="py-4 text-[#E5E5E5] font-medium">${item.Anúncio}</td>
-                            <td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50">${formatNumber(item.Unidades)}</td>
-                            <td class="py-4 pr-6 text-right text-emerald-400 font-black">${formatMoney(item.Faturamento)}</td>
-                        </tr>
-                    `).join('');
-                }
+                    document.getElementById('kpi-ads').textContent = formatMoney(data.kpis.receita_ads);
+                    document.getElementById('kpi-custo').textContent = formatMoney(data.kpis.investimento_ads);
+                    document.getElementById('kpi-op').textContent = data.kpis.qtd_oportunidades;
 
-                if (data.gargalos.length === 0) {
-                    document.getElementById('body-gar').innerHTML = `<tr><td colspan="7" class="py-12 text-center text-[#A3A3A3] font-medium">Sem gargalos detectados na operação.</td></tr>`;
-                } else {
-                    document.getElementById('body-gar').innerHTML = data.gargalos.map(item => `
-                        <tr class="hover:bg-[#262626] transition-colors">
-                            <td class="py-4 pl-6 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td>
-                            <td class="py-4 text-[#E5E5E5] font-medium"><div class="truncate w-48 md:w-64" title="${item.Anúncio}">${item.Anúncio}</div></td>
-                            <td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50">${formatNumber(item.Unidades)}</td>
-                            <td class="py-4 text-right font-bold text-white">${formatMoney(item.Faturamento)}</td>
-                            <td class="py-4 text-right text-rose-500 font-bold">${formatMoney(item.Investimento_Ads)}</td>
-                            <td class="py-4 text-right text-[#3483FA] font-bold">${formatMoney(item.Receita_Ads)}</td>
-                            <td class="py-4">${getDependenciaBadgeTable(item.Dependencia_Ads)}</td>
-                        </tr>
-                    `).join('');
+                    if (data.oportunidades.length === 0) {
+                        document.getElementById('body-op').innerHTML = `<tr><td colspan="4" class="py-12 text-center text-[#A3A3A3] font-medium">Sem oportunidades pendentes.</td></tr>`;
+                    } else {
+                        document.getElementById('body-op').innerHTML = data.oportunidades.map(item => `
+                            <tr class="hover:bg-[#262626] transition-colors"><td class="py-4 pl-6 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td><td class="py-4 text-[#E5E5E5] font-medium">${item.Anúncio}</td><td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50">${formatNumber(item.Unidades)}</td><td class="py-4 pr-6 text-right text-emerald-400 font-black">${formatMoney(item.Faturamento)}</td></tr>
+                        `).join('');
+                    }
+
+                    if (data.gargalos.length === 0) {
+                        document.getElementById('body-gar').innerHTML = `<tr><td colspan="7" class="py-12 text-center text-[#A3A3A3] font-medium">Sem gargalos detectados na operação.</td></tr>`;
+                    } else {
+                        document.getElementById('body-gar').innerHTML = data.gargalos.map(item => `
+                            <tr class="hover:bg-[#262626] transition-colors"><td class="py-4 pl-6 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td><td class="py-4 text-[#E5E5E5] font-medium"><div class="truncate w-48 md:w-64" title="${item.Anúncio}">${item.Anúncio}</div></td><td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50">${formatNumber(item.Unidades)}</td><td class="py-4 text-right font-bold text-white">${formatMoney(item.Faturamento)}</td><td class="py-4 text-right text-rose-500 font-bold">${formatMoney(item.Investimento_Ads)}</td><td class="py-4 text-right text-[#3483FA] font-bold">${formatMoney(item.Receita_Ads)}</td><td class="py-4">${getDependenciaBadgeTable(item.Dependencia_Ads)}</td></tr>
+                        `).join('');
+                    }
+                    switchTab('op');
                 }
 
                 dadosVisaoGeral = data.visao_geral;
                 document.getElementById('searchAbc').value = '';
                 document.getElementById('filterCurve').value = 'Todas';
+                
                 renderizarTabelaAbc();
                 renderizarGraficos(data);
-                renderizarInsights(data);
+                if (globalHasAds) renderizarInsights(data);
 
-                switchTab('op');
             } catch (err) {
                 showError(err.message);
                 btnSubmit.disabled = false;
