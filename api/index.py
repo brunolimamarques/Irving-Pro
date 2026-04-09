@@ -56,7 +56,6 @@ def processar():
         arq_desempenho = request.files.get('desempenho')
         arq_ads = request.files.get('ads')
 
-        # Agora apenas o Desempenho é obrigatório
         if not arq_desempenho:
             return jsonify({"erro": "A planilha de Desempenho é obrigatória para qualquer análise."}), 400
 
@@ -75,7 +74,8 @@ def processar():
         else:
             df_desempenho[col_unidades] = 0
 
-        df_desempenho['ID_Tratado'] = df_desempenho['ID do anúncio'].astype(str).str.upper().str.replace('MLB', '', regex=False).str.strip()
+        # BLINDAGEM DE ID: Remove o MLB, remove decimais fantasma (.0) e espaços
+        df_desempenho['ID_Tratado'] = df_desempenho['ID do anúncio'].astype(str).str.upper().str.replace('MLB', '', regex=False).str.replace(r'\.0$', '', regex=True).str.strip()
         df_desempenho['Anúncio'] = df_desempenho['Anúncio'].fillna('Anúncio sem título')
         
         df_desempenho_agrupado = df_desempenho.groupby('ID_Tratado').agg({
@@ -103,7 +103,6 @@ def processar():
         receita_ads_total = 0.0
         investimento_ads_total = 0.0
 
-        # LÓGICA CONDICIONAL: SE TEM ADS, FAZ O CRUZAMENTO. SE NÃO, APENAS ABC.
         if arq_ads:
             has_ads = True
             df_ads = carregar_planilha_segura(arq_ads, True)
@@ -122,7 +121,8 @@ def processar():
             if col_invest_ads and col_invest_ads in df_ads.columns:
                 df_ads[col_invest_ads] = df_ads[col_invest_ads].apply(limpar_moeda)
 
-            df_ads['ID_Tratado'] = df_ads[col_id_ads].astype(str).str.upper().str.replace('MLB', '', regex=False).str.strip()
+            # BLINDAGEM DE ID NO ADS TAMBÉM
+            df_ads['ID_Tratado'] = df_ads[col_id_ads].astype(str).str.upper().str.replace('MLB', '', regex=False).str.replace(r'\.0$', '', regex=True).str.strip()
 
             agg_dict = {col_receita_ads: 'sum'}
             if col_invest_ads:
@@ -156,7 +156,7 @@ def processar():
             
             visao_geral = df_final.sort_values(by=col_vendas_brutas, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
         else:
-            # MODO ORGÂNICO (SÓ DESEMPENHO)
+            # MODO ORGÂNICO
             df_final = df_desempenho_agrupado.copy()
             df_final['Receita_Ads'] = 0.0
             df_final['Investimento_Ads'] = 0.0
