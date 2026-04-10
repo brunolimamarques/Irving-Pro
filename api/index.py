@@ -4,10 +4,6 @@ import numpy as np
 
 app = Flask(__name__)
 
-# ====================================================================
-# A "GUILHOTINA FINANCEIRA": Arredonda célula a célula na leitura.
-# Impede que micro-cêntimos invisíveis passem para a fase de soma.
-# ====================================================================
 def limpar_moeda(valor):
     if pd.isna(valor) or valor == '-': return 0.0
     if isinstance(valor, (int, float)): return round(float(valor), 2)
@@ -28,7 +24,6 @@ def limpar_moeda(valor):
         v = v.replace('.', '')
 
     try: 
-        # CORTA AQUI: Transforma 1.937 em 1.94 logo na leitura!
         return round(float(v), 2)
     except: 
         return 0.0
@@ -91,7 +86,6 @@ def processar():
         
         df_desempenho = df_desempenho[df_desempenho[col_id_des].astype(str).str.contains(r'\d', regex=True, na=False)]
 
-        # Como o limpar_moeda já corta as dízimas, tudo o que for somado daqui para baixo será exato.
         if col_vendas_brutas in df_desempenho.columns:
             df_desempenho[col_vendas_brutas] = df_desempenho[col_vendas_brutas].apply(limpar_moeda)
         
@@ -110,13 +104,19 @@ def processar():
         }).reset_index()
         
         df_desempenho_agrupado.rename(columns={'Anúncio_Clean': 'Anúncio'}, inplace=True)
-        df_desempenho_agrupado = df_desempenho_agrupado.sort_values(by=col_vendas_brutas, ascending=False).copy()
+        
+        # =========================================================================
+        # MUDANÇA ESTRATÉGICA: CURVA ABC BASEADA EM UNIDADES VENDIDAS (VOLUME)
+        # =========================================================================
+        # 1. Ordenamos tudo por quantidade de unidades vendidas
+        df_desempenho_agrupado = df_desempenho_agrupado.sort_values(by=col_unidades, ascending=False).copy()
         
         faturamento_total = round(float(df_desempenho_agrupado[col_vendas_brutas].sum()), 2)
         unidades_total = int(df_desempenho_agrupado[col_unidades].sum())
         
-        if faturamento_total > 0:
-            df_desempenho_agrupado['Percentual_Acumulado'] = (df_desempenho_agrupado[col_vendas_brutas].cumsum() / faturamento_total) * 100
+        # 2. O Percentual Acumulado agora é a soma de unidades dividida pelo total de unidades
+        if unidades_total > 0:
+            df_desempenho_agrupado['Percentual_Acumulado'] = (df_desempenho_agrupado[col_unidades].cumsum() / unidades_total) * 100
         else:
             df_desempenho_agrupado['Percentual_Acumulado'] = 0
             
@@ -179,6 +179,7 @@ def processar():
             )
             df_final['Dependencia_Ads'] = np.minimum(df_final['Dependencia_Ads'], 100) 
 
+            # Alertas baseados na nova curva (A = Alto volume de envios, C = Baixo volume)
             df_final['Alerta_Oportunidade'] = (df_final['Curva_ABC'] == 'A') & (df_final['Receita_Ads'] == 0)
             df_final['Alerta_Gargalo'] = (df_final['Curva_ABC'] == 'C') & (df_final['Investimento_Ads'] > 0) & (df_final[col_vendas_brutas] <= df_final['Investimento_Ads'])
 
@@ -195,7 +196,8 @@ def processar():
             receita_ads_total = round(float(df_final['Receita_Ads'].sum()), 2)
             investimento_ads_total = round(float(df_final['Investimento_Ads'].sum()), 2)
             
-            visao_geral = df_final.sort_values(by=col_vendas_brutas, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
+            # Ordenamos as tabelas e exportações por Unidades (Volume)
+            visao_geral = df_final.sort_values(by=col_unidades, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
         
         else:
             df_final = df_desempenho_agrupado.copy()
@@ -205,7 +207,8 @@ def processar():
             
             df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
             
-            visao_geral = df_final.sort_values(by=col_vendas_brutas, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
+            # Ordenamos as tabelas e exportações por Unidades (Volume)
+            visao_geral = df_final.sort_values(by=col_unidades, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
 
         return jsonify({
             "has_ads": has_ads,
