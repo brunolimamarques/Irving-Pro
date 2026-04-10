@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Irving Pro | ML Dark Mode</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         body { 
@@ -210,20 +214,29 @@
                 </div>
 
                 <div id="tab-abc" class="p-6 hidden bg-[#1F1F1F]">
-                    <div class="flex flex-col md:flex-row gap-4 mb-6">
-                        <div class="flex-1 relative">
+                    <div id="abc-controls" class="flex flex-col lg:flex-row gap-4 mb-6 items-center">
+                        <div class="flex-1 relative w-full">
                             <i class="fa-solid fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-[#A3A3A3]"></i>
                             <input type="text" id="searchAbc" placeholder="Pesquisar anúncio..." class="ml-input w-full pl-10 pr-4 py-3 text-sm font-medium" onkeyup="renderizarTabelaAbc()">
                         </div>
-                        <div class="w-full md:w-64 relative">
+                        <div class="w-full lg:w-64 relative">
                             <select id="filterCurve" class="ml-input w-full pl-4 pr-10 py-3 text-sm font-medium appearance-none cursor-pointer" onchange="renderizarTabelaAbc()">
                                 <option value="Todas">Todas as Curvas</option><option value="A">Curva A (80%)</option><option value="B">Curva B (15%)</option><option value="C">Curva C (5%)</option>
                             </select>
                             <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-[#A3A3A3] pointer-events-none text-xs"></i>
                         </div>
+                        
+                        <div class="flex gap-3 w-full lg:w-auto">
+                            <button onclick="exportarExcel()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-5 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm">
+                                <i class="fa-solid fa-file-excel"></i> Excel
+                            </button>
+                            <button id="btn-pdf" onclick="exportarPDF()" class="flex-1 lg:flex-none flex items-center justify-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-5 py-3 rounded-xl text-sm font-bold transition-all active:scale-95 shadow-sm">
+                                <i class="fa-solid fa-file-pdf"></i> PDF
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="overflow-y-auto overflow-x-auto no-scrollbar border border-[#333333] rounded-xl max-h-[500px] relative">
+                    <div id="abc-table-wrapper" class="overflow-y-auto overflow-x-auto no-scrollbar border border-[#333333] rounded-xl max-h-[500px] relative bg-[#1F1F1F]">
                         <table class="w-full text-left border-collapse min-w-[800px]">
                             <thead id="thead-abc" class="bg-[#1A1A1A] sticky top-0 z-10">
                                 </thead>
@@ -243,6 +256,7 @@
         Chart.defaults.borderColor = '#333333';
 
         let dadosVisaoGeral = []; 
+        let dadosFiltradosGlobal = []; // Guarda os dados filtrados para a exportação
         let globalHasAds = true;
         let myBarChart = null;
         let myPieChart = null;
@@ -309,6 +323,9 @@
                 return combinaBusca && combinaCurva;
             });
 
+            // Atualiza a variável global para que o Export pegue apenas o que está filtrado na tela
+            dadosFiltradosGlobal = dadosFiltrados;
+
             const theadAbc = document.getElementById('thead-abc');
             if(globalHasAds) {
                 theadAbc.innerHTML = `
@@ -351,6 +368,68 @@
                 }
             }).join('');
         }
+
+        // ==========================================
+        // NOVAS FUNÇÕES DE EXPORTAÇÃO
+        // ==========================================
+        function exportarExcel() {
+            if (dadosFiltradosGlobal.length === 0) return showError("Nenhum dado para exportar.");
+            
+            // Mapeia os dados para ficarem bonitos no Excel
+            const dadosExcel = dadosFiltradosGlobal.map(item => {
+                let row = {
+                    "Curva": item.Curva_ABC,
+                    "ID Anúncio": item.ID_Tratado,
+                    "Produto": item.Anúncio,
+                    "Unidades": item.Unidades,
+                    "Faturamento Total (R$)": item.Faturamento
+                };
+                if (globalHasAds) {
+                    row["Investimento Ads (R$)"] = item.Investimento_Ads;
+                    row["Receita Ads (R$)"] = item.Receita_Ads;
+                    row["Dependência Ads (%)"] = item.Dependencia_Ads;
+                }
+                return row;
+            });
+
+            // Usa a biblioteca SheetJS para gerar o ficheiro
+            const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Curva ABC");
+            XLSX.writeFile(workbook, "Irving_Relatorio_Curva_ABC.xlsx");
+        }
+
+        function exportarPDF() {
+            if (dadosFiltradosGlobal.length === 0) return showError("Nenhum dado para exportar.");
+            
+            const btn = document.getElementById('btn-pdf');
+            const tableWrapper = document.getElementById('abc-table-wrapper');
+            const controls = document.getElementById('abc-controls');
+            
+            const oldHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando...';
+            
+            // Prepara a tabela para o PDF (tira o limite de altura para capturar tudo)
+            controls.style.display = 'none';
+            tableWrapper.classList.remove('max-h-[500px]', 'overflow-y-auto');
+            tableWrapper.style.backgroundColor = '#1F1F1F'; // Garante fundo escuro
+
+            const opt = {
+              margin:       0.2,
+              filename:     'Irving_Relatorio_Curva_ABC.pdf',
+              image:        { type: 'jpeg', quality: 1 },
+              html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#1F1F1F' },
+              jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' }
+            };
+
+            // Gera e depois devolve a tabela ao normal
+            html2pdf().set(opt).from(tableWrapper).save().then(() => {
+                controls.style.display = 'flex';
+                tableWrapper.classList.add('max-h-[500px]', 'overflow-y-auto');
+                btn.innerHTML = oldHtml;
+            });
+        }
+        // ==========================================
 
         function renderizarGraficos(dados) {
             if(myBarChart) myBarChart.destroy();
@@ -447,7 +526,6 @@
                 document.getElementById('kpi-fat').textContent = formatMoney(data.kpis.faturamento_total);
                 document.getElementById('kpi-unid').textContent = `${formatNumber(data.kpis.unidades_total)} un. vendidas`;
                 
-                // MODO ORGÂNICO UI ADAPTATION
                 if (!globalHasAds) {
                     document.getElementById('badge-modo').classList.replace('hidden', 'flex');
                     document.getElementById('insight-main').textContent = "Curva ABC gerada a partir do relatório de desempenho.";
