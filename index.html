@@ -3,24 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irving Pro | ML Dark Mode</title>
+    <title>Irving Pro | Inteligência Omnichannel</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: 'var(--brand-color)',
+                        'brand-hover': 'var(--brand-hover)',
+                    }
+                }
+            }
+        }
+    </script>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
+        /* Variáveis Globais de Tema (Padrão: Mercado Livre) */
+        :root {
+            --brand-color: #3483FA;
+            --brand-hover: #2968C8;
+            --bg-main: #121212;
+            --bg-card: #1F1F1F;
+        }
+
+        /* Tema Automático: Shopee */
+        .theme-shopee {
+            --brand-color: #EE4D2D;
+            --brand-hover: #D73211;
+        }
+
         body { 
-            background-color: #121212; 
+            background-color: var(--bg-main); 
             color: #E5E5E5; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.5s ease;
         }
 
         .ml-card { 
-            background: #1F1F1F; 
+            background: var(--bg-card); 
             border-radius: 16px; 
             border: 1px solid #333333;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
@@ -42,7 +69,7 @@
         .delay-300 { animation-delay: 0.3s; }
 
         .progress-bg { background: #333333; border-radius: 999px; height: 6px; width: 100%; overflow: hidden; }
-        .progress-bar { height: 100%; border-radius: 999px; transition: width 1s ease; }
+        .progress-bar { height: 100%; border-radius: 999px; transition: width 1s ease, background-color 0.5s ease; }
         
         .ml-input {
             background: #2D2D2D;
@@ -52,8 +79,8 @@
             transition: all 0.2s ease;
         }
         .ml-input:focus {
-            border-color: #3483FA; 
-            box-shadow: 0 0 0 3px rgba(52, 131, 250, 0.2);
+            border-color: var(--brand-color); 
+            box-shadow: 0 0 0 3px rgba(var(--brand-color), 0.2);
             outline: none;
         }
 
@@ -69,7 +96,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="selection:bg-[#3483FA]/30 pb-20">
+<body class="selection:bg-brand/30 pb-20">
 
     <div id="toast" class="fixed top-6 right-6 transform translate-x-[150%] opacity-0 transition-all duration-500 z-50 flex items-center gap-3 px-6 py-4 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] bg-[#1F1F1F] border border-rose-900/50">
         <div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center">
@@ -78,17 +105,17 @@
         <span id="toast-msg" class="text-white font-semibold text-sm">Erro detectado!</span>
     </div>
 
-    <header class="bg-[#1F1F1F] border-b border-[#333333] px-6 py-4 sticky top-0 z-40 shadow-md">
+    <header class="bg-[#1F1F1F] border-b border-[#333333] px-6 py-4 sticky top-0 z-40 shadow-md transition-colors duration-500">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-[#FFF159] flex items-center justify-center shadow-[0_0_15px_rgba(255,241,89,0.2)]">
                     <i class="fa-solid fa-handshake text-[#121212] text-lg"></i>
                 </div>
-                <h1 class="text-2xl font-extrabold text-white tracking-tight">Irving <span class="text-[#3483FA]">Pro</span></h1>
+                <h1 id="brand-title" class="text-2xl font-extrabold text-white tracking-tight transition-colors duration-500">Irving <span class="text-brand">Pro</span></h1>
             </div>
             <div class="flex items-center gap-4">
                 <button onclick="window.location.reload()" class="flex items-center gap-2 bg-[#2D2D2D] hover:bg-[#333333] text-[#E5E5E5] hover:text-white px-5 py-2.5 rounded-full text-sm font-bold transition-all border border-[#444444] transform active:scale-95">
-                    <i class="fa-solid fa-rotate-right"></i> Atualizar Dados
+                    <i class="fa-solid fa-rotate-right"></i> Nova Análise
                 </button>
             </div>
         </div>
@@ -96,24 +123,24 @@
 
     <main class="max-w-7xl mx-auto px-4 md:px-6 mt-8">
         
-        <div id="upload-section" class="max-w-2xl mx-auto bg-[#1F1F1F] p-10 rounded-[2rem] shadow-2xl border border-[#333333] text-center animate-fade-up mt-12">
-            <div class="w-24 h-24 bg-[#3483FA]/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-[#3483FA]/20">
-                <i class="fa-solid fa-cloud-arrow-up text-5xl text-[#3483FA]"></i>
+        <div id="upload-section" class="max-w-2xl mx-auto bg-[#1F1F1F] p-10 rounded-[2rem] shadow-2xl border border-[#333333] text-center animate-fade-up mt-12 transition-colors duration-500">
+            <div class="w-24 h-24 bg-brand/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-brand/20 transition-colors duration-500">
+                <i class="fa-solid fa-cloud-arrow-up text-5xl text-brand transition-colors duration-500"></i>
             </div>
             <h2 class="text-3xl font-extrabold text-white mb-3">Conecte seus Dados</h2>
-            <p class="text-[#A3A3A3] mb-10 font-medium">Faça o upload dos relatórios para gerar o painel noturno.</p>
+            <p class="text-[#A3A3A3] mb-10 font-medium">Faça o upload dos relatórios do ML ou Shopee.</p>
             
             <form id="uploadForm" class="text-left space-y-6">
-                <div class="bg-[#121212] p-5 rounded-2xl border border-[#333333] hover:border-[#3483FA]/50 transition-all shadow-inner group">
-                    <label id="lbl-desempenho" class="block text-sm font-bold text-white mb-3 group-hover:text-[#3483FA] transition-colors"><i class="fa-solid fa-file-csv text-[#A3A3A3] mr-2 group-hover:text-[#3483FA]"></i> 1. Relatório de Desempenho (Obrigatório)</label>
+                <div class="bg-[#121212] p-5 rounded-2xl border border-[#333333] hover:border-brand/50 transition-all shadow-inner group">
+                    <label id="lbl-desempenho" class="block text-sm font-bold text-white mb-3 group-hover:text-brand transition-colors"><i class="fa-solid fa-file-csv text-[#A3A3A3] mr-2 group-hover:text-brand transition-colors"></i> 1. Relatório de Desempenho / Orgânico (Obrigatório)</label>
                     <input type="file" id="desempenho" accept=".csv, .xlsx" class="block w-full text-sm text-[#A3A3A3]">
                 </div>
-                <div class="bg-[#121212] p-5 rounded-2xl border border-[#333333] hover:border-[#3483FA]/50 transition-all shadow-inner group">
-                    <label id="lbl-ads" class="block text-sm font-bold text-white mb-3 group-hover:text-[#3483FA] transition-colors"><i class="fa-solid fa-bullseye text-[#A3A3A3] mr-2 group-hover:text-[#3483FA]"></i> 2. Relatório de Publicidade <span class="text-[#A3A3A3] font-normal">(Opcional)</span></label>
+                <div class="bg-[#121212] p-5 rounded-2xl border border-[#333333] hover:border-brand/50 transition-all shadow-inner group">
+                    <label id="lbl-ads" class="block text-sm font-bold text-white mb-3 group-hover:text-brand transition-colors"><i class="fa-solid fa-bullseye text-[#A3A3A3] mr-2 group-hover:text-brand transition-colors"></i> 2. Relatório de Publicidade / Ads <span class="text-[#A3A3A3] font-normal">(Opcional)</span></label>
                     <input type="file" id="ads" accept=".csv, .xlsx" class="block w-full text-sm text-[#A3A3A3]">
                 </div>
                 
-                <button type="submit" id="btn-submit" class="w-full mt-4 bg-[#3483FA] hover:bg-[#2968C8] text-white py-4 rounded-2xl font-extrabold text-lg transition-all duration-300 shadow-[0_8px_20px_rgba(52,131,250,0.3)] transform active:scale-[0.98] flex items-center justify-center gap-3 border border-[#4890fc]/50">
+                <button type="submit" id="btn-submit" class="w-full mt-4 bg-brand hover:bg-brand-hover text-white py-4 rounded-2xl font-extrabold text-lg transition-all duration-300 shadow-[0_8px_20px_rgba(var(--brand-color),0.3)] transform active:scale-[0.98] flex items-center justify-center gap-3 border border-brand/50">
                     <i class="fa-solid fa-bolt"></i> Processar Inteligência
                 </button>
             </form>
@@ -126,7 +153,7 @@
                     <h2 class="text-3xl font-extrabold text-white">Visão Executiva</h2>
                     <p id="insight-main" class="text-[#A3A3A3] text-lg mt-1 font-medium">Analisando o seu catálogo...</p>
                 </div>
-                <div id="badge-modo" class="hidden bg-[#3483FA]/20 text-[#3483FA] border border-[#3483FA]/30 px-3 py-1 rounded-full text-xs font-bold items-center gap-1">
+                <div id="badge-modo" class="hidden bg-brand/20 text-brand border border-brand/30 px-3 py-1 rounded-full text-xs font-bold items-center gap-1 transition-colors duration-500">
                     <i class="fa-solid fa-leaf"></i> MODO ORGÂNICO
                 </div>
             </div>
@@ -139,7 +166,7 @@
                     <p id="kpi-unid" class="text-sm font-bold text-emerald-400 mt-2 bg-emerald-500/10 inline-block px-2 py-0.5 rounded border border-emerald-500/20 relative z-10">0 un. vendidas</p>
                 </div>
                 <div id="kpi-card-ads-1" class="ml-card p-6 animate-fade-up delay-100 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-bullhorn text-5xl text-[#3483FA]"></i></div>
+                    <div class="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><i class="fa-solid fa-bullhorn text-5xl text-brand transition-colors duration-500"></i></div>
                     <p class="text-xs font-bold text-[#A3A3A3] uppercase tracking-widest mb-2 relative z-10">Receita de Ads</p>
                     <h3 id="kpi-ads" class="text-3xl font-black text-white relative z-10">R$ 0,00</h3>
                 </div>
@@ -163,7 +190,7 @@
                 </div>
                 <div id="chart-pie-wrapper" class="ml-card p-6 animate-fade-up delay-300 flex flex-col">
                     <h3 class="text-lg font-bold text-white mb-1 text-center">Concentração ABC</h3>
-                    <p class="text-sm text-[#A3A3A3] mb-6 text-center">Distribuição da receita da sua operação.</p>
+                    <p class="text-sm text-[#A3A3A3] mb-6 text-center">Distribuição de volume de vendas (Giro).</p>
                     <div class="relative flex-1 w-full flex justify-center items-center min-h-[250px]"><canvas id="pieChart"></canvas></div>
                 </div>
             </div>
@@ -179,7 +206,7 @@
             <div class="ml-card overflow-hidden animate-fade-up delay-300 mb-12">
                 <div id="tabs-container" class="px-6 py-5 border-b border-[#333333] bg-[#1A1A1A]">
                     <div class="bg-[#121212] p-1.5 rounded-2xl flex gap-2 w-full md:w-fit overflow-x-auto no-scrollbar shadow-inner border border-[#333333]">
-                        <button onclick="switchTab('op')" id="btn-op" class="px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap bg-[#3483FA] text-white shadow-sm transform active:scale-95">
+                        <button onclick="switchTab('op')" id="btn-op" class="px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap bg-brand text-white shadow-sm transform active:scale-95">
                             <i class="fa-solid fa-arrow-trend-up"></i> Escala
                         </button>
                         <button onclick="switchTab('gar')" id="btn-gar" class="px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-[#A3A3A3] hover:bg-[#1F1F1F] hover:text-white transform active:scale-95">
@@ -195,7 +222,7 @@
                     <table class="w-full text-left border-collapse relative min-w-[800px]">
                         <thead class="bg-[#1A1A1A] sticky top-0 z-10">
                             <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
-                                <th class="py-4 pl-6 font-bold">MLB</th><th class="py-4 font-bold">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right pr-6">Fat. Orgânico</th>
+                                <th class="py-4 pl-6 font-bold">ID / Código</th><th class="py-4 font-bold">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right pr-6">Fat. Orgânico</th>
                             </tr>
                         </thead>
                         <tbody id="body-op" class="divide-y divide-[#333333] text-sm"></tbody>
@@ -206,7 +233,7 @@
                     <table class="w-full text-left border-collapse relative min-w-[1000px]">
                         <thead class="bg-[#1A1A1A] sticky top-0 z-10">
                             <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
-                                <th class="py-4 pl-6 font-bold">MLB</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right">Faturamento</th><th class="py-4 font-bold text-right text-rose-500">Custo Ads</th><th class="py-4 font-bold text-right text-[#3483FA]">Receita Ads</th><th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
+                                <th class="py-4 pl-6 font-bold">ID / Código</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right">Faturamento</th><th class="py-4 font-bold text-right text-rose-500">Custo Ads</th><th class="py-4 font-bold text-right text-brand">Receita Ads</th><th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
                             </tr>
                         </thead>
                         <tbody id="body-gar" class="divide-y divide-[#333333] text-sm"></tbody>
@@ -221,7 +248,7 @@
                         </div>
                         <div class="w-full lg:w-64 relative">
                             <select id="filterCurve" class="ml-input w-full pl-4 pr-10 py-3 text-sm font-medium appearance-none cursor-pointer" onchange="renderizarTabelaAbc()">
-                                <option value="Todas">Todas as Curvas</option><option value="A">Curva A (80%)</option><option value="B">Curva B (15%)</option><option value="C">Curva C (5%)</option>
+                                <option value="Todas">Todas as Curvas</option><option value="A">Curva A (80% do Giro)</option><option value="B">Curva B (15% do Giro)</option><option value="C">Curva C (5% do Giro)</option>
                             </select>
                             <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-[#A3A3A3] pointer-events-none text-xs"></i>
                         </div>
@@ -256,18 +283,20 @@
         Chart.defaults.borderColor = '#333333';
 
         let dadosVisaoGeral = []; 
-        let dadosFiltradosGlobal = []; // Guarda os dados filtrados para a exportação
+        let dadosFiltradosGlobal = []; 
         let globalHasAds = true;
+        let currentPlatform = 'Mercado Livre';
         let myBarChart = null;
         let myPieChart = null;
 
+        // Feedback Visual de Arquivos
         ['desempenho', 'ads'].forEach(id => {
             document.getElementById(id).addEventListener('change', function() {
                 const label = document.getElementById(`lbl-${id}`);
                 if(this.files.length > 0) {
-                    label.classList.add('text-[#3483FA]');
+                    label.classList.add('text-brand');
                     label.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i> Anexado com Sucesso`;
-                    this.parentElement.classList.add('border-[#3483FA]/50', 'bg-[#3483FA]/5');
+                    this.parentElement.classList.add('border-brand/50', 'bg-brand/5');
                 }
             });
         });
@@ -281,7 +310,7 @@
 
         function switchTab(tab) {
             const baseClasses = "px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap transform active:scale-95";
-            const activeClasses = "bg-[#3483FA] text-white shadow-sm";
+            const activeClasses = "bg-brand text-white shadow-sm";
             const inactiveClasses = "text-[#A3A3A3] hover:bg-[#1F1F1F] hover:text-white";
 
             ['op', 'gar', 'abc'].forEach(t => {
@@ -293,8 +322,8 @@
         }
 
         function getDependenciaBadgeTable(pct) {
-            let color = pct > 80 ? 'bg-rose-500' : pct > 40 ? 'bg-amber-500' : 'bg-[#3483FA]';
-            let textColor = pct > 80 ? 'text-rose-500' : pct > 40 ? 'text-amber-500' : 'text-[#3483FA]';
+            let color = pct > 80 ? 'bg-rose-500' : pct > 40 ? 'bg-amber-500' : 'bg-brand';
+            let textColor = pct > 80 ? 'text-rose-500' : pct > 40 ? 'text-amber-500' : 'text-brand';
             return `
                 <div class="flex flex-col items-end pr-6">
                     <span class="text-[11px] font-bold ${textColor} mb-1">${pct.toFixed(1)}%</span>
@@ -304,9 +333,12 @@
         }
 
         function getCurvaBadge(letra) {
+            const isShopee = currentPlatform === 'Shopee';
+            const brandBgClass = isShopee ? 'bg-[#EE4D2D]/20 text-[#EE4D2D] border-[#EE4D2D]/30' : 'bg-blue-500/20 text-[#3483FA] border-blue-500/30';
+            
             const cores = { 
                 'A': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30', 
-                'B': 'bg-blue-500/20 text-[#3483FA] border border-blue-500/30', 
+                'B': `border ${brandBgClass}`, 
                 'C': 'bg-[#333333] text-[#A3A3A3] border border-[#444444]' 
             };
             return `<div class="flex justify-center"><span class="px-3 py-1 rounded-lg font-black text-xs ${cores[letra]}">${letra}</span></div>`;
@@ -323,20 +355,19 @@
                 return combinaBusca && combinaCurva;
             });
 
-            // Atualiza a variável global para que o Export pegue apenas o que está filtrado na tela
             dadosFiltradosGlobal = dadosFiltrados;
 
             const theadAbc = document.getElementById('thead-abc');
             if(globalHasAds) {
                 theadAbc.innerHTML = `
                     <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
-                        <th class="py-4 font-bold pl-6 text-center w-20">Curva</th><th class="py-4 font-bold">MLB</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right">Fat. Total</th><th class="py-4 font-bold text-right text-rose-500">Custo Ads</th><th class="py-4 font-bold text-right text-[#3483FA]">Receita Ads</th><th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
+                        <th class="py-4 font-bold pl-6 text-center w-20">Curva</th><th class="py-4 font-bold">ID / Código</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right">Fat. Total</th><th class="py-4 font-bold text-right text-rose-500">Custo Ads</th><th class="py-4 font-bold text-right text-brand">Receita Ads</th><th class="py-4 font-bold text-center pr-6 w-32">Dependência</th>
                     </tr>
                 `;
             } else {
                 theadAbc.innerHTML = `
                     <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
-                        <th class="py-4 font-bold pl-6 text-center w-20">Curva</th><th class="py-4 font-bold">MLB</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right pr-6">Fat. Orgânico</th>
+                        <th class="py-4 font-bold pl-6 text-center w-20">Curva</th><th class="py-4 font-bold">ID / Código</th><th class="py-4 font-bold w-64">Produto</th><th class="py-4 font-bold text-center">Unidades</th><th class="py-4 font-bold text-right pr-6">Fat. Orgânico</th>
                     </tr>
                 `;
             }
@@ -358,7 +389,7 @@
                     return `<tr class="hover:bg-[#262626] transition-colors">${htmlBase}
                         <td class="py-4 text-right text-white font-bold">${formatMoney(item.Faturamento)}</td>
                         <td class="py-4 text-right text-rose-500 font-semibold">${formatMoney(item.Investimento_Ads)}</td>
-                        <td class="py-4 text-right text-[#3483FA] font-semibold">${formatMoney(item.Receita_Ads)}</td>
+                        <td class="py-4 text-right text-brand font-semibold">${formatMoney(item.Receita_Ads)}</td>
                         <td class="py-4">${getDependenciaBadgeTable(item.Dependencia_Ads)}</td>
                     </tr>`;
                 } else {
@@ -370,18 +401,17 @@
         }
 
         // ==========================================
-        // NOVAS FUNÇÕES DE EXPORTAÇÃO
+        // FUNÇÕES DE EXPORTAÇÃO
         // ==========================================
         function exportarExcel() {
             if (dadosFiltradosGlobal.length === 0) return showError("Nenhum dado para exportar.");
             
-            // Mapeia os dados para ficarem bonitos no Excel
             const dadosExcel = dadosFiltradosGlobal.map(item => {
                 let row = {
-                    "Curva": item.Curva_ABC,
-                    "ID Anúncio": item.ID_Tratado,
-                    "Produto": item.Anúncio,
-                    "Unidades": item.Unidades,
+                    "Curva ABC (Por Giro)": item.Curva_ABC,
+                    "ID Produto": item.ID_Tratado,
+                    "Nome": item.Anúncio,
+                    "Unidades Vendidas": item.Unidades,
                     "Faturamento Total (R$)": item.Faturamento
                 };
                 if (globalHasAds) {
@@ -392,11 +422,10 @@
                 return row;
             });
 
-            // Usa a biblioteca SheetJS para gerar o ficheiro
             const worksheet = XLSX.utils.json_to_sheet(dadosExcel);
             const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Curva ABC");
-            XLSX.writeFile(workbook, "Irving_Relatorio_Curva_ABC.xlsx");
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Curva ABC - Irving");
+            XLSX.writeFile(workbook, `Irving_${currentPlatform.replace(' ', '')}_Curva_ABC.xlsx`);
         }
 
         function exportarPDF() {
@@ -409,31 +438,34 @@
             const oldHtml = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Gerando...';
             
-            // Prepara a tabela para o PDF (tira o limite de altura para capturar tudo)
             controls.style.display = 'none';
             tableWrapper.classList.remove('max-h-[500px]', 'overflow-y-auto');
-            tableWrapper.style.backgroundColor = '#1F1F1F'; // Garante fundo escuro
+            tableWrapper.style.backgroundColor = '#1F1F1F'; 
 
             const opt = {
               margin:       0.2,
-              filename:     'Irving_Relatorio_Curva_ABC.pdf',
+              filename:     `Irving_${currentPlatform.replace(' ', '')}_Curva_ABC.pdf`,
               image:        { type: 'jpeg', quality: 1 },
               html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#1F1F1F' },
               jsPDF:        { unit: 'in', format: 'a3', orientation: 'landscape' }
             };
 
-            // Gera e depois devolve a tabela ao normal
             html2pdf().set(opt).from(tableWrapper).save().then(() => {
                 controls.style.display = 'flex';
                 tableWrapper.classList.add('max-h-[500px]', 'overflow-y-auto');
                 btn.innerHTML = oldHtml;
             });
         }
-        // ==========================================
 
+        // ==========================================
+        // GRÁFICOS DINÂMICOS
+        // ==========================================
         function renderizarGraficos(dados) {
             if(myBarChart) myBarChart.destroy();
             if(myPieChart) myPieChart.destroy();
+            
+            // Cor baseada na plataforma ativa
+            const currentBrandHex = currentPlatform === 'Shopee' ? '#EE4D2D' : '#3483FA';
 
             if (globalHasAds) {
                 const top5 = dados.visao_geral.slice(0, 5);
@@ -444,7 +476,7 @@
                         labels: top5.map(d => d.Anúncio.substring(0, 15) + '...'),
                         datasets: [
                             { label: 'Orgânico', data: top5.map(d => d.Faturamento - d.Receita_Ads), backgroundColor: '#10b981', borderRadius: 6 },
-                            { label: 'Ads', data: top5.map(d => d.Receita_Ads), backgroundColor: '#3483FA', borderRadius: 6 }
+                            { label: 'Ads', data: top5.map(d => d.Receita_Ads), backgroundColor: currentBrandHex, borderRadius: 6 }
                         ]
                     },
                     options: {
@@ -464,7 +496,7 @@
                 type: 'doughnut',
                 data: {
                     labels: ['Curva A', 'Curva B', 'Curva C'],
-                    datasets: [{ data: [countA, countB, countC], backgroundColor: ['#10b981', '#3483FA', '#f43f5e'], borderWidth: 0, cutout: '75%' }]
+                    datasets: [{ data: [countA, countB, countC], backgroundColor: ['#10b981', currentBrandHex, '#f43f5e'], borderWidth: 0, cutout: '75%' }]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
@@ -478,23 +510,26 @@
             const box1 = document.getElementById('insight-box-1');
             const box2 = document.getElementById('insight-box-2');
 
-            insightMain.innerHTML = `O seu catálogo possui <strong class="text-[#FFF159]">${dados.oportunidades.length} oportunidades de escala</strong> não exploradas e <strong class="text-rose-500">${dados.gargalos.length} gargalos</strong>.`;
+            insightMain.innerHTML = `Análise <strong class="text-brand uppercase">${currentPlatform}</strong> finalizada. Possui <strong class="text-[#FFF159]">${dados.oportunidades.length} produtos para escala</strong> e <strong class="text-rose-500">${dados.gargalos.length} gargalos</strong>.`;
 
             if (dados.oportunidades.length > 0) {
                 const best = dados.oportunidades[0];
-                box1.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30"><i class="fa-solid fa-rocket text-xl"></i></div><div><h4 class="font-extrabold text-white">Escala Imediata</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">O produto <strong>"${best.Anúncio.substring(0,25)}..."</strong> gerou <span class="text-emerald-400 font-bold">${formatMoney(best.Faturamento)}</span> sem Ads.</p></div></div>`;
+                box1.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30"><i class="fa-solid fa-rocket text-xl"></i></div><div><h4 class="font-extrabold text-white">Escala Imediata</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">O produto <strong>"${best.Anúncio.substring(0,25)}..."</strong> gerou <span class="text-emerald-400 font-bold">${formatMoney(best.Faturamento)}</span> com giro de ${best.Unidades} unid. sem Ads.</p></div></div>`;
             } else {
-                box1.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i> <p class="text-sm font-medium">Todos os seus campeões já estão em campanhas ativas!</p></div>`;
+                box1.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i> <p class="text-sm font-medium">Todos os seus campeões (Curva A de volume) já estão em campanhas ativas!</p></div>`;
             }
 
             if (dados.gargalos.length > 0) {
                 const worst = dados.gargalos[0];
-                box2.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-rose-500/20 text-rose-400 rounded-xl border border-rose-500/30"><i class="fa-solid fa-fire text-xl"></i></div><div><h4 class="font-extrabold text-white">Alerta de Desperdício</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">Investimento de <span class="text-rose-400 font-bold">${formatMoney(worst.Investimento_Ads)}</span> no produto <strong>"${worst.Anúncio.substring(0,25)}..."</strong> (Curva C).</p></div></div>`;
+                box2.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-rose-500/20 text-rose-400 rounded-xl border border-rose-500/30"><i class="fa-solid fa-fire text-xl"></i></div><div><h4 class="font-extrabold text-white">Alerta de Desperdício</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">Investimento de <span class="text-rose-400 font-bold">${formatMoney(worst.Investimento_Ads)}</span> no produto <strong>"${worst.Anúncio.substring(0,25)}..."</strong> que tem giro fraco (Curva C).</p></div></div>`;
             } else {
-                box2.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-shield-check text-[#3483FA] text-xl"></i> <p class="text-sm font-medium">Nenhum produto sugando verba detectado. Operação limpa.</p></div>`;
+                box2.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-shield-check text-brand text-xl"></i> <p class="text-sm font-medium">Nenhum produto sugando verba detectado. Operação limpa.</p></div>`;
             }
         }
 
+        // ==========================================
+        // SUBMISSÃO E PROCESSAMENTO CORE
+        // ==========================================
         document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -502,7 +537,7 @@
             const fileDes = document.getElementById('desempenho').files[0];
             const fileAds = document.getElementById('ads').files[0];
 
-            if (!fileDes) return showError("O Relatório de Desempenho é obrigatório.");
+            if (!fileDes) return showError("O Relatório de Desempenho (Orgânico) é obrigatório.");
 
             btnSubmit.disabled = true;
             btnSubmit.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Processando Algoritmo...`;
@@ -519,6 +554,18 @@
                 if (data.erro) throw new Error(data.erro);
 
                 globalHasAds = data.has_ads;
+                currentPlatform = data.plataforma || 'Mercado Livre'; // Detectado no Python!
+
+                // ===============================================
+                // MOTOR DE TEMAS: Ativa as cores com base na Plataforma
+                // ===============================================
+                if (currentPlatform === 'Shopee') {
+                    document.body.classList.add('theme-shopee');
+                    document.getElementById('brand-title').innerHTML = `Irving <span class="text-brand">Shopee</span>`;
+                } else {
+                    document.body.classList.remove('theme-shopee');
+                    document.getElementById('brand-title').innerHTML = `Irving <span class="text-brand">Pro</span>`;
+                }
 
                 document.getElementById('upload-section').style.display = 'none';
                 document.getElementById('dashboard-section').style.display = 'block';
@@ -528,7 +575,7 @@
                 
                 if (!globalHasAds) {
                     document.getElementById('badge-modo').classList.replace('hidden', 'flex');
-                    document.getElementById('insight-main').textContent = "Curva ABC gerada a partir do relatório de desempenho.";
+                    document.getElementById('insight-main').innerHTML = `Curva ABC da <strong class="text-brand uppercase">${currentPlatform}</strong> gerada com sucesso.`;
                     
                     document.getElementById('kpis-container').className = "grid grid-cols-1 mb-10";
                     document.getElementById('kpi-card-fat').classList.add('border-l-4', 'border-emerald-500');
@@ -560,7 +607,7 @@
                         document.getElementById('body-gar').innerHTML = `<tr><td colspan="7" class="py-12 text-center text-[#A3A3A3] font-medium">Sem gargalos detectados na operação.</td></tr>`;
                     } else {
                         document.getElementById('body-gar').innerHTML = data.gargalos.map(item => `
-                            <tr class="hover:bg-[#262626] transition-colors"><td class="py-4 pl-6 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td><td class="py-4 text-[#E5E5E5] font-medium"><div class="truncate w-48 md:w-64" title="${item.Anúncio}">${item.Anúncio}</div></td><td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50">${formatNumber(item.Unidades)}</td><td class="py-4 text-right font-bold text-white">${formatMoney(item.Faturamento)}</td><td class="py-4 text-right text-rose-500 font-bold">${formatMoney(item.Investimento_Ads)}</td><td class="py-4 text-right text-[#3483FA] font-bold">${formatMoney(item.Receita_Ads)}</td><td class="py-4">${getDependenciaBadgeTable(item.Dependencia_Ads)}</td></tr>
+                            <tr class="hover:bg-[#262626] transition-colors"><td class="py-4 pl-6 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td><td class="py-4 text-[#E5E5E5] font-medium"><div class="truncate w-48 md:w-64" title="${item.Anúncio}">${item.Anúncio}</div></td><td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50">${formatNumber(item.Unidades)}</td><td class="py-4 text-right font-bold text-white">${formatMoney(item.Faturamento)}</td><td class="py-4 text-right text-rose-500 font-bold">${formatMoney(item.Investimento_Ads)}</td><td class="py-4 text-right text-brand font-bold">${formatMoney(item.Receita_Ads)}</td><td class="py-4">${getDependenciaBadgeTable(item.Dependencia_Ads)}</td></tr>
                         `).join('');
                     }
                     switchTab('op');
