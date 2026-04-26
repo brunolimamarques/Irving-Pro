@@ -34,9 +34,7 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     nome = arquivo.filename.lower()
     
     if nome.endswith('.csv'):
-        # =========================================================================
-        # LEITOR "ANTI-PÂNICO": Não quebra com linhas de tamanhos diferentes!
-        # =========================================================================
+        # Leitor Anti-Pânico para CSVs (Resolve o erro da Shopee)
         conteudo = arquivo.read()
         try:
             texto = conteudo.decode('utf-8')
@@ -46,11 +44,9 @@ def carregar_planilha_segura(arquivo, is_ads=False):
             except UnicodeDecodeError:
                 texto = conteudo.decode('iso-8859-1')
                 
-        # Detetor Inteligente de Separador (Avalia as 5 primeiras linhas)
         amostra = '\n'.join(texto.split('\n')[0:5])
         separador = ';' if amostra.count(';') > amostra.count(',') else ','
         
-        # O módulo CSV do Python aceita "linhas tortas" sem dar erro de tokenizing
         leitor = csv.reader(io.StringIO(texto), delimiter=separador)
         dados = list(leitor)
         
@@ -60,7 +56,29 @@ def carregar_planilha_segura(arquivo, is_ads=False):
         df = pd.DataFrame(dados)
     else:
         try:
-            df = pd.read_excel(arquivo, header=None)
+            # =========================================================================
+            # RADAR DE ABAS: Lê todas as planilhas do Excel e acha a correta!
+            # Resolve o problema das abas de "Ajuda" e "Glossário" do ML
+            # =========================================================================
+            dfs = pd.read_excel(arquivo, sheet_name=None, header=None)
+            df = None
+            
+            for nome_aba, sheet_df in dfs.items():
+                for i in range(min(30, len(sheet_df))):
+                    linha = sheet_df.iloc[i].astype(str).str.lower().tolist()
+                    if any('código do anúncio' in v or 'id do anúncio' in v or 'id do item' in v or 'nome do anúncio' in v for v in linha):
+                        df = sheet_df
+                        break
+                if df is not None:
+                    break
+            
+            # Se a inteligência falhar, procura pelo nome direto
+            if df is None:
+                aba_alvo = 'Relatório Anúncios patrocinados' if is_ads else 'Relatório'
+                if aba_alvo in dfs:
+                    df = dfs[aba_alvo]
+                else:
+                    df = list(dfs.values())[-1]
         except Exception:
             arquivo.seek(0)
             df = pd.read_excel(arquivo, header=None)
@@ -68,21 +86,17 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     if df is None or len(df) == 0:
         raise ValueError("O arquivo enviado parece estar vazio.")
             
-    # DETETOR INTELIGENTE DE CABEÇALHOS
+    # DETETOR INTELIGENTE DE CABEÇALHOS (Corta o lixo do topo)
     linha_cabecalho = 0
     for i in range(min(30, len(df))):
         linha_atual = df.iloc[i].astype(str).str.lower().tolist()
         
-        # ML Ads
         if any('código do anúncio' in v or 'número do anúncio vendido' in v for v in linha_atual):
             linha_cabecalho = i; break
-        # ML Desempenho
         elif any('id do anúncio' in v for v in linha_atual):
             linha_cabecalho = i; break
-        # SHOPEE Ads 
         elif any('nome do anúncio' in v or 'tipos de anúncios' in v for v in linha_atual):
             linha_cabecalho = i; break
-        # SHOPEE Desempenho
         elif any('id do item' in v for v in linha_atual):
             linha_cabecalho = i; break
             
@@ -138,7 +152,6 @@ def processar():
         }).reset_index()
         
         df_desempenho_agrupado.rename(columns={'Anúncio_Clean': 'Anúncio'}, inplace=True)
-        
         df_desempenho_agrupado = df_desempenho_agrupado.sort_values(by=col_unidades, ascending=False).copy()
         
         faturamento_total = round(float(df_desempenho_agrupado[col_vendas_brutas].sum()), 2)
