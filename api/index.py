@@ -1,11 +1,13 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import numpy as np
+import io
+import csv
 
 app = Flask(__name__)
 
 def limpar_moeda(valor):
-    if pd.isna(valor) or valor == '-': return 0.0
+    if pd.isna(valor) or valor == '-' or valor is None: return 0.0
     if isinstance(valor, (int, float)): return round(float(valor), 2)
     
     v = str(valor).replace('R$', '').replace('BRL', '').strip()
@@ -32,15 +34,30 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     nome = arquivo.filename.lower()
     
     if nome.endswith('.csv'):
+        # =========================================================================
+        # LEITOR "ANTI-PÂNICO": Não quebra com linhas de tamanhos diferentes!
+        # =========================================================================
+        conteudo = arquivo.read()
         try:
-            df = pd.read_csv(arquivo, header=None, encoding='utf-8')
+            texto = conteudo.decode('utf-8')
         except UnicodeDecodeError:
-            arquivo.seek(0)
             try:
-                df = pd.read_csv(arquivo, header=None, encoding='utf-16')
+                texto = conteudo.decode('utf-16')
             except UnicodeDecodeError:
-                arquivo.seek(0)
-                df = pd.read_csv(arquivo, header=None, encoding='iso-8859-1')
+                texto = conteudo.decode('iso-8859-1')
+                
+        # Detetor Inteligente de Separador (Avalia as 5 primeiras linhas)
+        amostra = '\n'.join(texto.split('\n')[0:5])
+        separador = ';' if amostra.count(';') > amostra.count(',') else ','
+        
+        # O módulo CSV do Python aceita "linhas tortas" sem dar erro de tokenizing
+        leitor = csv.reader(io.StringIO(texto), delimiter=separador)
+        dados = list(leitor)
+        
+        if not dados:
+            raise ValueError("O arquivo CSV parece estar vazio.")
+            
+        df = pd.DataFrame(dados)
     else:
         try:
             df = pd.read_excel(arquivo, header=None)
@@ -51,18 +68,19 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     if df is None or len(df) == 0:
         raise ValueError("O arquivo enviado parece estar vazio.")
             
-    # DETETOR INTELIGENTE DE CABEÇALHOS (Agora corta o "lixo" da Shopee)
+    # DETETOR INTELIGENTE DE CABEÇALHOS
     linha_cabecalho = 0
     for i in range(min(30, len(df))):
         linha_atual = df.iloc[i].astype(str).str.lower().tolist()
+        
         # ML Ads
         if any('código do anúncio' in v or 'número do anúncio vendido' in v for v in linha_atual):
             linha_cabecalho = i; break
         # ML Desempenho
         elif any('id do anúncio' in v for v in linha_atual):
             linha_cabecalho = i; break
-        # SHOPEE Ads (Procura colunas típicas para ignorar as 6 linhas iniciais)
-        elif any('nome do anúncio' in v and 'tipos de anúncios' in v for v in linha_atual):
+        # SHOPEE Ads 
+        elif any('nome do anúncio' in v or 'tipos de anúncios' in v for v in linha_atual):
             linha_cabecalho = i; break
         # SHOPEE Desempenho
         elif any('id do item' in v for v in linha_atual):
@@ -84,27 +102,22 @@ def processar():
 
         df_desempenho = carregar_planilha_segura(arq_desempenho, False)
         
-        # =========================================================================
-        # OMNICHANNEL DETECTOR: Identifica a plataforma pelas colunas
-        # =========================================================================
-        colunas_des = [c.lower() for c in df_desempenho.columns]
+        colunas_des = [str(c).lower() for c in df_desempenho.columns]
         plataforma = 'Shopee' if 'id do item' in colunas_des else 'Mercado Livre'
 
         if plataforma == 'Shopee':
-            col_id_des = next((c for c in df_desempenho.columns if 'id do item' in c.lower()), 'ID do Item')
-            # Prioriza Pedido Pago, se não houver, vai para Pedido Realizado
-            col_vendas_brutas = next((c for c in df_desempenho.columns if 'vendas (pedido pago)' in c.lower()), 
-                                next((c for c in df_desempenho.columns if 'vendas' in c.lower()), 'Vendas'))
-            col_unidades = next((c for c in df_desempenho.columns if 'unidades (pedido pago)' in c.lower()), 
-                           next((c for c in df_desempenho.columns if 'unidades' in c.lower()), 'Unidades'))
-            col_titulo_des = next((c for c in df_desempenho.columns if 'produto' in c.lower()), 'Produto')
+            col_id_des = next((c for c in df_desempenho.columns if 'id do item' in str(c).lower()), 'ID do Item')
+            col_vendas_brutas = next((c for c in df_desempenho.columns if 'vendas (pedido pago)' in str(c).lower()), 
+                                next((c for c in df_desempenho.columns if 'vendas' in str(c).lower()), 'Vendas'))
+            col_unidades = next((c for c in df_desempenho.columns if 'unidades (pedido pago)' in str(c).lower()), 
+                           next((c for c in df_desempenho.columns if 'unidades' in str(c).lower()), 'Unidades'))
+            col_titulo_des = next((c for c in df_desempenho.columns if 'produto' in str(c).lower()), 'Produto')
         else:
-            col_id_des = next((c for c in df_desempenho.columns if 'id do anúncio' in c.lower()), 'ID do anúncio')
-            col_vendas_brutas = next((c for c in df_desempenho.columns if 'vendas brutas' in c.lower() or 'receita' in c.lower()), 'Vendas brutas (BRL)')
-            col_unidades = next((c for c in df_desempenho.columns if 'unidades' in c.lower() and 'vendidas' in c.lower()), 'Unidades vendidas')
-            col_titulo_des = next((c for c in df_desempenho.columns if 'título' in c.lower() or 'anúncio' in c.lower() and 'id' not in c.lower()), 'Anúncio')
+            col_id_des = next((c for c in df_desempenho.columns if 'id do anúncio' in str(c).lower()), 'ID do anúncio')
+            col_vendas_brutas = next((c for c in df_desempenho.columns if 'vendas brutas' in str(c).lower() or 'receita' in str(c).lower()), 'Vendas brutas (BRL)')
+            col_unidades = next((c for c in df_desempenho.columns if 'unidades' in str(c).lower() and 'vendidas' in str(c).lower()), 'Unidades vendidas')
+            col_titulo_des = next((c for c in df_desempenho.columns if 'título' in str(c).lower() or 'anúncio' in str(c).lower() and 'id' not in str(c).lower()), 'Anúncio')
 
-        # Filtra apenas linhas com IDs válidos
         df_desempenho = df_desempenho[df_desempenho[col_id_des].astype(str).str.contains(r'\d', regex=True, na=False)]
 
         if col_vendas_brutas in df_desempenho.columns:
@@ -115,7 +128,6 @@ def processar():
         else:
             df_desempenho[col_unidades] = 0
 
-        # Tratamento Universal de ID (Remove MLB se existir, limpa espaços)
         df_desempenho['ID_Tratado'] = df_desempenho[col_id_des].astype(str).str.upper().str.replace('MLB', '', regex=False).str.replace(r'\.0$', '', regex=True).str.strip()
         df_desempenho['Anúncio_Clean'] = df_desempenho.get(col_titulo_des, 'Produto sem título').fillna('Produto sem título')
         
@@ -127,7 +139,6 @@ def processar():
         
         df_desempenho_agrupado.rename(columns={'Anúncio_Clean': 'Anúncio'}, inplace=True)
         
-        # Ordem e Curva ABC baseada em Unidades (Volume/Giro) - Mantendo a sua última estratégia de ouro!
         df_desempenho_agrupado = df_desempenho_agrupado.sort_values(by=col_unidades, ascending=False).copy()
         
         faturamento_total = round(float(df_desempenho_agrupado[col_vendas_brutas].sum()), 2)
@@ -151,17 +162,16 @@ def processar():
             has_ads = True
             df_ads = carregar_planilha_segura(arq_ads, True)
             
-            # Mapeamento Condicional de Ads (ML vs Shopee)
             if plataforma == 'Shopee':
-                col_id_ads = next((c for c in df_ads.columns if 'id do produto' in c.lower()), None)
-                col_receita_ads = next((c for c in df_ads.columns if 'gmv' in c.lower()), 'GMV')
-                col_invest_ads = next((c for c in df_ads.columns if 'despesas' in c.lower()), 'Despesas')
-                col_titulo_ads = next((c for c in df_ads.columns if 'nome do anúncio' in c.lower()), 'Nome do Anúncio')
+                col_id_ads = next((c for c in df_ads.columns if 'id do produto' in str(c).lower()), None)
+                col_receita_ads = next((c for c in df_ads.columns if 'gmv' in str(c).lower()), 'GMV')
+                col_invest_ads = next((c for c in df_ads.columns if 'despesas' in str(c).lower()), 'Despesas')
+                col_titulo_ads = next((c for c in df_ads.columns if 'nome do anúncio' in str(c).lower()), 'Nome do Anúncio')
             else:
-                col_id_ads = next((c for c in df_ads.columns if 'código do anúncio' in c.lower() or 'número do anúncio vendido' in c.lower()), None)
-                col_receita_ads = next((c for c in df_ads.columns if 'receita' in c.lower() and 'moeda local' in c.lower() and 'diretas' not in c.lower()), 'Receita')
-                col_invest_ads = next((c for c in df_ads.columns if 'investimento' in c.lower() and 'moeda local' in c.lower()), None)
-                col_titulo_ads = next((c for c in df_ads.columns if 'título' in c.lower() and 'anúncio' in c.lower()), 'Título_Ads')
+                col_id_ads = next((c for c in df_ads.columns if 'código do anúncio' in str(c).lower() or 'número do anúncio vendido' in str(c).lower()), None)
+                col_receita_ads = next((c for c in df_ads.columns if 'receita' in str(c).lower() and 'moeda local' in str(c).lower() and 'diretas' not in str(c).lower()), 'Receita')
+                col_invest_ads = next((c for c in df_ads.columns if 'investimento' in str(c).lower() and 'moeda local' in str(c).lower()), None)
+                col_titulo_ads = next((c for c in df_ads.columns if 'título' in str(c).lower() and 'anúncio' in str(c).lower()), 'Título_Ads')
 
             if not col_id_ads:
                 return jsonify({"erro": f"Não foi possível encontrar a coluna de ID na planilha de Ads da {plataforma}."}), 400
@@ -233,7 +243,7 @@ def processar():
             visao_geral = df_final.sort_values(by=col_unidades, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
 
         return jsonify({
-            "plataforma": plataforma, # O BACKEND AGORA AVISA O FRONTEND QUAL É A PLATAFORMA!
+            "plataforma": plataforma, 
             "has_ads": has_ads,
             "kpis": {
                 "faturamento_total": faturamento_total,
