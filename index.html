@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Irving Pro | Inteligência Omnichannel</title>
+    <title>Irving Pro | Inteligência Omnichannel & Logística</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -212,6 +212,9 @@
                         <button onclick="switchTab('gar')" id="btn-gar" class="px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-[#A3A3A3] hover:bg-[#1F1F1F] hover:text-white transform active:scale-95">
                             <i class="fa-solid fa-magnifying-glass-chart"></i> Dependentes
                         </button>
+                        <button onclick="switchTab('full')" id="btn-full" class="px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-[#A3A3A3] hover:bg-[#1F1F1F] hover:text-white transform active:scale-95">
+                            <i class="fa-solid fa-box-open"></i> Envios Full
+                        </button>
                         <button onclick="switchTab('abc')" id="btn-abc" class="px-6 py-2.5 text-sm font-bold rounded-xl transition-all duration-300 flex items-center gap-2 whitespace-nowrap text-[#A3A3A3] hover:bg-[#1F1F1F] hover:text-white transform active:scale-95">
                             <i class="fa-solid fa-layer-group"></i> Visão Geral ABC
                         </button>
@@ -237,6 +240,26 @@
                             </tr>
                         </thead>
                         <tbody id="body-gar" class="divide-y divide-[#333333] text-sm"></tbody>
+                    </table>
+                </div>
+
+                <div id="tab-full" class="overflow-y-auto overflow-x-auto no-scrollbar hidden max-h-[500px]">
+                    <div class="bg-brand/10 p-4 border-b border-brand/20 flex items-center gap-3 transition-colors duration-500">
+                        <i class="fa-solid fa-truck-fast text-brand text-xl transition-colors duration-500"></i>
+                        <p class="text-sm text-[#A3A3A3] font-medium">Reposição inteligente baseada no volume vendido. <strong class="text-white">Conservador (-10%)</strong> previne taxa de estoque encalhado. <strong class="text-white">Agressivo (+10%)</strong> foca em não quebrar estoque durante a escala.</p>
+                    </div>
+                    <table class="w-full text-left border-collapse relative min-w-[900px]">
+                        <thead class="bg-[#1A1A1A] sticky top-0 z-10">
+                            <tr class="text-[#A3A3A3] text-[11px] uppercase tracking-wider border-b border-[#333333]">
+                                <th class="py-4 pl-6 font-bold w-16 text-center">Curva</th>
+                                <th class="py-4 font-bold">ID / Código</th>
+                                <th class="py-4 font-bold w-64">Produto</th>
+                                <th class="py-4 font-bold text-center">Giro Mensal (Vendido)</th>
+                                <th class="py-4 font-bold text-center text-amber-500 bg-amber-500/5">Envio Conservador</th>
+                                <th class="py-4 font-bold text-center text-emerald-400 bg-emerald-500/5 pr-6">Envio Agressivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="body-full" class="divide-y divide-[#333333] text-sm"></tbody>
                     </table>
                 </div>
 
@@ -313,7 +336,7 @@
             const activeClasses = "bg-brand text-white shadow-sm";
             const inactiveClasses = "text-[#A3A3A3] hover:bg-[#1F1F1F] hover:text-white";
 
-            ['op', 'gar', 'abc'].forEach(t => {
+            ['op', 'gar', 'full', 'abc'].forEach(t => {
                 const el = document.getElementById(`tab-${t}`);
                 const btn = document.getElementById(`btn-${t}`);
                 if(el) el.style.display = t === tab ? 'block' : 'none';
@@ -464,7 +487,6 @@
             if(myBarChart) myBarChart.destroy();
             if(myPieChart) myPieChart.destroy();
             
-            // Cor baseada na plataforma ativa
             const currentBrandHex = currentPlatform === 'Shopee' ? '#EE4D2D' : '#3483FA';
 
             if (globalHasAds) {
@@ -516,14 +538,14 @@
                 const best = dados.oportunidades[0];
                 box1.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-emerald-500/20 text-emerald-400 rounded-xl border border-emerald-500/30"><i class="fa-solid fa-rocket text-xl"></i></div><div><h4 class="font-extrabold text-white">Escala Imediata</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">O produto <strong>"${best.Anúncio.substring(0,25)}..."</strong> gerou <span class="text-emerald-400 font-bold">${formatMoney(best.Faturamento)}</span> com giro de ${best.Unidades} unid. sem Ads.</p></div></div>`;
             } else {
-                box1.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i> <p class="text-sm font-medium">Todos os seus campeões (Curva A de volume) já estão em campanhas ativas!</p></div>`;
+                box1.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i> <p class="text-sm font-medium">Todos os seus campeões (Curva A de volume) já estão em campanhas ativas!</p></div></div>`;
             }
 
             if (dados.gargalos.length > 0) {
                 const worst = dados.gargalos[0];
                 box2.innerHTML = `<div class="flex items-start gap-4"><div class="p-3 bg-rose-500/20 text-rose-400 rounded-xl border border-rose-500/30"><i class="fa-solid fa-fire text-xl"></i></div><div><h4 class="font-extrabold text-white">Alerta de Desperdício</h4><p class="text-sm text-[#A3A3A3] mt-1 leading-relaxed">Investimento de <span class="text-rose-400 font-bold">${formatMoney(worst.Investimento_Ads)}</span> no produto <strong>"${worst.Anúncio.substring(0,25)}..."</strong> que tem giro fraco (Curva C).</p></div></div>`;
             } else {
-                box2.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-shield-check text-brand text-xl"></i> <p class="text-sm font-medium">Nenhum produto sugando verba detectado. Operação limpa.</p></div>`;
+                box2.innerHTML = `<div class="flex items-center gap-3 text-[#A3A3A3]"><i class="fa-solid fa-shield-check text-brand text-xl"></i> <p class="text-sm font-medium">Nenhum produto sugando verba detectado. Operação limpa.</p></div></div>`;
             }
         }
 
@@ -554,10 +576,10 @@
                 if (data.erro) throw new Error(data.erro);
 
                 globalHasAds = data.has_ads;
-                currentPlatform = data.plataforma || 'Mercado Livre'; // Detectado no Python!
+                currentPlatform = data.plataforma || 'Mercado Livre';
 
                 // ===============================================
-                // MOTOR DE TEMAS: Ativa as cores com base na Plataforma
+                // MOTOR DE TEMAS
                 // ===============================================
                 if (currentPlatform === 'Shopee') {
                     document.body.classList.add('theme-shopee');
@@ -611,6 +633,22 @@
                         `).join('');
                     }
                     switchTab('op');
+                }
+
+                // RENDERING NOVA ABA: ENVIOS FULL
+                if (data.envios_full && data.envios_full.length === 0) {
+                    document.getElementById('body-full').innerHTML = `<tr><td colspan="6" class="py-12 text-center text-[#A3A3A3] font-medium">Nenhum dado de giro encontrado.</td></tr>`;
+                } else if (data.envios_full) {
+                    document.getElementById('body-full').innerHTML = data.envios_full.map(item => `
+                        <tr class="hover:bg-[#262626] transition-colors">
+                            <td class="py-4 pl-6">${getCurvaBadge(item.Curva_ABC)}</td>
+                            <td class="py-4 font-mono text-[#888888] text-xs">${item.ID_Tratado}</td>
+                            <td class="py-4 text-[#E5E5E5] font-medium"><div class="truncate w-48 md:w-64" title="${item.Anúncio}">${item.Anúncio}</div></td>
+                            <td class="py-4 text-center font-bold text-[#A3A3A3] bg-[#222222]/50 border-r border-[#333333]">${formatNumber(item.Giro)}</td>
+                            <td class="py-4 text-center font-bold text-amber-500 bg-amber-500/5">${formatNumber(item.Sugestao_Conservadora)} un.</td>
+                            <td class="py-4 pr-6 text-center font-bold text-emerald-400 bg-emerald-500/5">${formatNumber(item.Sugestao_Agressiva)} un.</td>
+                        </tr>
+                    `).join('');
                 }
 
                 dadosVisaoGeral = data.visao_geral;
