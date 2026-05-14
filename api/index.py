@@ -34,7 +34,6 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     nome = arquivo.filename.lower()
     
     if nome.endswith('.csv'):
-        # Leitor Anti-Pânico para CSVs (Resolve o erro da Shopee)
         conteudo = arquivo.read()
         try:
             texto = conteudo.decode('utf-8')
@@ -56,10 +55,6 @@ def carregar_planilha_segura(arquivo, is_ads=False):
         df = pd.DataFrame(dados)
     else:
         try:
-            # =========================================================================
-            # RADAR DE ABAS: Lê todas as planilhas do Excel e acha a correta!
-            # Resolve o problema das abas de "Ajuda" e "Glossário" do ML
-            # =========================================================================
             dfs = pd.read_excel(arquivo, sheet_name=None, header=None)
             df = None
             
@@ -72,7 +67,6 @@ def carregar_planilha_segura(arquivo, is_ads=False):
                 if df is not None:
                     break
             
-            # Se a inteligência falhar, procura pelo nome direto
             if df is None:
                 aba_alvo = 'Relatório Anúncios patrocinados' if is_ads else 'Relatório'
                 if aba_alvo in dfs:
@@ -86,7 +80,6 @@ def carregar_planilha_segura(arquivo, is_ads=False):
     if df is None or len(df) == 0:
         raise ValueError("O arquivo enviado parece estar vazio.")
             
-    # DETETOR INTELIGENTE DE CABEÇALHOS (Corta o lixo do topo)
     linha_cabecalho = 0
     for i in range(min(30, len(df))):
         linha_atual = df.iloc[i].astype(str).str.lower().tolist()
@@ -232,28 +225,36 @@ def processar():
 
             df_final = df_final.replace([np.inf, -np.inf], 0).fillna(0)
 
-            df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
-            df_final['Receita_Ads'] = df_final['Receita_Ads'].round(2)
-            df_final['Investimento_Ads'] = df_final['Investimento_Ads'].round(2)
-            df_final['Dependencia_Ads'] = df_final['Dependencia_Ads'].round(2)
-
-            oportunidades = df_final[df_final['Alerta_Oportunidade']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas]].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
-            gargalos = df_final[df_final['Alerta_Gargalo']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).sort_values(by='Investimento_Ads', ascending=False).to_dict('records')
-            
-            receita_ads_total = round(float(df_final['Receita_Ads'].sum()), 2)
-            investimento_ads_total = round(float(df_final['Investimento_Ads'].sum()), 2)
-            
-            visao_geral = df_final.sort_values(by=col_unidades, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
-        
         else:
             df_final = df_desempenho_agrupado.copy()
             df_final['Receita_Ads'] = 0.0
             df_final['Investimento_Ads'] = 0.0
             df_final['Dependencia_Ads'] = 0.0
-            
-            df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
-            
-            visao_geral = df_final.sort_values(by=col_unidades, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
+
+        # =========================================================================
+        # MÓDULO LOGÍSTICO: Cálculo de Reposição FULL / FBF
+        # =========================================================================
+        df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
+        df_final['Receita_Ads'] = df_final['Receita_Ads'].round(2)
+        df_final['Investimento_Ads'] = df_final['Investimento_Ads'].round(2)
+        df_final['Dependencia_Ads'] = df_final['Dependencia_Ads'].round(2)
+        
+        # Cria as sugestões matemáticas arredondando para números inteiros
+        df_final['Sugestao_Conservadora'] = np.floor(df_final[col_unidades] * 0.9).astype(int)
+        df_final['Sugestao_Agressiva'] = np.ceil(df_final[col_unidades] * 1.1).astype(int)
+
+        oportunidades = df_final[df_final['Alerta_Oportunidade']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas]].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
+        gargalos = df_final[df_final['Alerta_Gargalo']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).sort_values(by='Investimento_Ads', ascending=False).to_dict('records')
+        
+        # Filtra a aba de Envios apenas para produtos que tiveram giro (maior que 0)
+        envios_full = df_final[df_final[col_unidades] > 0].sort_values(by=col_unidades, ascending=False)[
+            ['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, 'Sugestao_Conservadora', 'Sugestao_Agressiva']
+        ].rename(columns={col_unidades: 'Giro'}).to_dict('records')
+        
+        receita_ads_total = round(float(df_final['Receita_Ads'].sum()), 2)
+        investimento_ads_total = round(float(df_final['Investimento_Ads'].sum()), 2)
+        
+        visao_geral = df_final.sort_values(by=col_unidades, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
 
         return jsonify({
             "plataforma": plataforma, 
@@ -267,6 +268,7 @@ def processar():
             },
             "oportunidades": oportunidades,
             "gargalos": gargalos,
+            "envios_full": envios_full,  # NOVO ARRAY ENVIADO PARA O FRONTEND
             "visao_geral": visao_geral
         })
     except Exception as e:
