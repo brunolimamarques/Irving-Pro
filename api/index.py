@@ -225,34 +225,33 @@ def processar():
 
             df_final = df_final.replace([np.inf, -np.inf], 0).fillna(0)
 
+            df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
+            df_final['Receita_Ads'] = df_final['Receita_Ads'].round(2)
+            df_final['Investimento_Ads'] = df_final['Investimento_Ads'].round(2)
+            df_final['Dependencia_Ads'] = df_final['Dependencia_Ads'].round(2)
+
+            oportunidades = df_final[df_final['Alerta_Oportunidade']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas]].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
+            gargalos = df_final[df_final['Alerta_Gargalo']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).sort_values(by='Investimento_Ads', ascending=False).to_dict('records')
+            
+            receita_ads_total = round(float(df_final['Receita_Ads'].sum()), 2)
+            investimento_ads_total = round(float(df_final['Investimento_Ads'].sum()), 2)
+            
         else:
             df_final = df_desempenho_agrupado.copy()
             df_final['Receita_Ads'] = 0.0
             df_final['Investimento_Ads'] = 0.0
             df_final['Dependencia_Ads'] = 0.0
+            df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
 
         # =========================================================================
-        # MÓDULO LOGÍSTICO: Cálculo de Reposição FULL / FBF
+        # MÓDULO LOGÍSTICO: Envios Full (Calculado independentemente do Ads)
         # =========================================================================
-        df_final[col_vendas_brutas] = df_final[col_vendas_brutas].round(2)
-        df_final['Receita_Ads'] = df_final['Receita_Ads'].round(2)
-        df_final['Investimento_Ads'] = df_final['Investimento_Ads'].round(2)
-        df_final['Dependencia_Ads'] = df_final['Dependencia_Ads'].round(2)
-        
-        # Cria as sugestões matemáticas arredondando para números inteiros
         df_final['Sugestao_Conservadora'] = np.floor(df_final[col_unidades] * 0.9).astype(int)
         df_final['Sugestao_Agressiva'] = np.ceil(df_final[col_unidades] * 1.1).astype(int)
 
-        oportunidades = df_final[df_final['Alerta_Oportunidade']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas]].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
-        gargalos = df_final[df_final['Alerta_Gargalo']][['ID_Tratado', 'Anúncio', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).sort_values(by='Investimento_Ads', ascending=False).to_dict('records')
-        
-        # Filtra a aba de Envios apenas para produtos que tiveram giro (maior que 0)
         envios_full = df_final[df_final[col_unidades] > 0].sort_values(by=col_unidades, ascending=False)[
             ['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, 'Sugestao_Conservadora', 'Sugestao_Agressiva']
         ].rename(columns={col_unidades: 'Giro'}).to_dict('records')
-        
-        receita_ads_total = round(float(df_final['Receita_Ads'].sum()), 2)
-        investimento_ads_total = round(float(df_final['Investimento_Ads'].sum()), 2)
         
         visao_geral = df_final.sort_values(by=col_unidades, ascending=False)[['ID_Tratado', 'Anúncio', 'Curva_ABC', col_unidades, col_vendas_brutas, 'Receita_Ads', 'Investimento_Ads', 'Dependencia_Ads']].rename(columns={col_vendas_brutas: 'Faturamento', col_unidades: 'Unidades'}).to_dict('records')
 
@@ -268,7 +267,7 @@ def processar():
             },
             "oportunidades": oportunidades,
             "gargalos": gargalos,
-            "envios_full": envios_full,  # NOVO ARRAY ENVIADO PARA O FRONTEND
+            "envios_full": envios_full,
             "visao_geral": visao_geral
         })
     except Exception as e:
